@@ -376,12 +376,13 @@ body.single-mode .slide-page.current-active {
   width: 100%;
   height: 100%;
   border-radius: 50%;
-  border: 4px solid transparent;
+  box-sizing: border-box;
   transition: all 0.2s;
 }
 .selection-marker.active {
-  border-color: #e11d48; /* لون أحمر بارز كالقلم */
-  box-shadow: 0 0 8px rgba(225, 29, 72, 0.4);
+  border: 5px solid #dc2626 !important;
+  background: rgba(220, 38, 38, 0.15) !important;
+  box-sizing: border-box !important;
 }
 
 /* --- الصفحة 4: تاريخ الميلاد --- */
@@ -446,10 +447,10 @@ body.single-mode .slide-page.current-active {
   background: rgba(13, 148, 136, 0.08);
 }
 .flag-hotspot.active {
-  border: 3px solid #e11d48 !important;
-  background: rgba(225, 29, 72, 0.12) !important;
+  border: 4px solid #dc2626 !important;
+  background: rgba(220, 38, 38, 0.18) !important;
   border-radius: 8px;
-  box-shadow: 0 0 10px rgba(225, 29, 72, 0.45);
+  box-sizing: border-box !important;
 }
 
 /* --- الصفحة 6: أقيم في (المناطق) --- */
@@ -469,12 +470,13 @@ body.single-mode .slide-page.current-active {
   width: 100%;
   height: 100%;
   border-radius: 16px;
-  border: 4px solid transparent;
+  box-sizing: border-box;
   transition: all 0.2s;
 }
 .region-circle-marker.active {
-  border-color: #e11d48;
-  background: rgba(225, 29, 72, 0.08);
+  border: 5px solid #dc2626 !important;
+  background: rgba(220, 38, 38, 0.15) !important;
+  box-sizing: border-box !important;
 }
 
 /* --- الصفحة 7: الأسرة والعائلة --- */
@@ -878,6 +880,25 @@ body.pdf-export-mode .photo-placeholder-ui,
 body.pdf-export-mode .mini-tool-btn,
 body.pdf-export-mode .start-journey-btn {
   display: none !important;
+}
+
+body.pdf-export-mode .selection-marker.active,
+body.pdf-export-mode .region-circle-marker.active {
+  border: 5px solid #dc2626 !important;
+  background-color: rgba(220, 38, 38, 0.18) !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  box-sizing: border-box !important;
+}
+
+body.pdf-export-mode .flag-hotspot.active {
+  border: 4px solid #dc2626 !important;
+  background-color: rgba(220, 38, 38, 0.18) !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  box-sizing: border-box !important;
 }
 
 /* ========================================================

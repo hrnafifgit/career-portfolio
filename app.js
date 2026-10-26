@@ -315,10 +315,34 @@ function prepareDomForPdf(container) {
     replacements.push({ el, div });
   });
 
+  // تثبيت الدوائر الحمراء والتحديدات المختارة (الصف، المنطقة، العلم) لتظهر بوضوح تام في الـ PDF
+  const activeMarkers = container.querySelectorAll('.selection-marker.active, .region-circle-marker.active, .flag-hotspot.active');
+  const markerBackups = [];
+
+  activeMarkers.forEach(marker => {
+    markerBackups.push({
+      marker,
+      oldBorder: marker.style.border,
+      oldBg: marker.style.backgroundColor,
+      oldBoxSizing: marker.style.boxSizing
+    });
+    marker.style.setProperty('border', '5px solid #dc2626', 'important');
+    marker.style.setProperty('background-color', 'rgba(220, 38, 38, 0.18)', 'important');
+    marker.style.setProperty('box-sizing', 'border-box', 'important');
+    marker.style.setProperty('display', 'block', 'important');
+    marker.style.setProperty('visibility', 'visible', 'important');
+    marker.style.setProperty('opacity', '1', 'important');
+  });
+
   return () => {
     replacements.forEach(({ el, div }) => {
       div.remove();
       el.style.display = '';
+    });
+    markerBackups.forEach(({ marker, oldBorder, oldBg, oldBoxSizing }) => {
+      marker.style.border = oldBorder;
+      marker.style.backgroundColor = oldBg;
+      marker.style.boxSizing = oldBoxSizing;
     });
   };
 }
