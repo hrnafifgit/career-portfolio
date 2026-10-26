@@ -841,6 +841,37 @@ canvas {
 }
 
 /* ========================================================
+   وضع تصدير الـ PDF المخصص لمنع قص الصفحات وضبط كل شريحة
+   ======================================================== */
+body.pdf-export-mode .document-container {
+  padding: 0 !important;
+  margin: 0 !important;
+  gap: 0 !important;
+  background: transparent !important;
+  display: block !important;
+}
+
+body.pdf-export-mode .slide-page {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  aspect-ratio: 1280 / 720 !important;
+  margin: 0 !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  page-break-after: always !important;
+  break-after: page !important;
+  page-break-inside: avoid !important;
+  break-inside: avoid !important;
+}
+
+body.pdf-export-mode .photo-placeholder-ui,
+body.pdf-export-mode .mini-tool-btn,
+body.pdf-export-mode .start-journey-btn {
+  display: none !important;
+}
+
+/* ========================================================
    نافذة حالة الرفع إلى Google Drive
    ======================================================== */
 .upload-modal-card {

@@ -296,7 +296,8 @@ async function submitPortfolio() {
   });
   renderAdminTable();
 
-  // إظهار جميع الصفحات مؤقتاً لكي تلتقطها مكتبة PDF بالكامل
+  // تفعيل وضع تصدير الـ PDF لمنع الفواصل وقص الصفحات
+  document.body.classList.add('pdf-export-mode');
   const prevMode = isSingleMode;
   document.querySelectorAll('.slide-page').forEach(page => {
     page.style.display = 'block';
@@ -307,9 +308,10 @@ async function submitPortfolio() {
   const opt = {
     margin: 0,
     filename: lastGeneratedPdfName,
-    image: { type: 'jpeg', quality: 0.95 },
-    html2canvas: { scale: 1.5, useCORS: true, logging: false },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 1.5, useCORS: true, logging: false, scrollY: 0 },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
+    pagebreak: { mode: ['avoid-all', 'css', 'legacy'], after: '.slide-page' }
   };
 
   try {
@@ -319,11 +321,12 @@ async function submitPortfolio() {
 
     setUploadState('loading', 'جارٍ الرفع المباشر إلى مجلد Google Drive...');
 
-    // تحويل الملف إلى DataURI / Base64
+    // تحويل الملف إلى DataURI / Base64 مع ضمان فصل كل شريحة في صفحة A4 مستقلة
     const pdfDataUri = await html2pdf().set(opt).from(docElement).outputPdf('datauristring');
     const base64Data = pdfDataUri.split(',')[1];
 
-    // استعادة وضع العرض الأصلي
+    // استعادة وضع العرض الأصلي وإزالة وضع التصدير
+    document.body.classList.remove('pdf-export-mode');
     if (prevMode) {
       document.querySelectorAll('.slide-page').forEach((page, idx) => {
         page.style.display = (idx + 1 === currentActivePage) ? 'block' : 'none';
@@ -362,7 +365,8 @@ async function submitPortfolio() {
   } catch (err) {
     console.error('Error uploading PDF:', err);
 
-    // استعادة وضع العرض الأصلي
+    // استعادة وضع العرض الأصلي وإزالة وضع التصدير
+    document.body.classList.remove('pdf-export-mode');
     if (prevMode) {
       document.querySelectorAll('.slide-page').forEach((page, idx) => {
         page.style.display = (idx + 1 === currentActivePage) ? 'block' : 'none';
@@ -375,6 +379,7 @@ async function submitPortfolio() {
 
 // تحميل PDF مباشرة على الجهاز كخيار احتياطي
 function downloadPdfDirectly() {
+  document.body.classList.add('pdf-export-mode');
   const prevMode = isSingleMode;
   document.querySelectorAll('.slide-page').forEach(page => {
     page.style.display = 'block';
@@ -384,12 +389,14 @@ function downloadPdfDirectly() {
   const opt = {
     margin: 0,
     filename: lastGeneratedPdfName,
-    image: { type: 'jpeg', quality: 0.95 },
-    html2canvas: { scale: 1.8, useCORS: true },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 1.5, useCORS: true, scrollY: 0 },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
+    pagebreak: { mode: ['avoid-all', 'css', 'legacy'], after: '.slide-page' }
   };
 
   html2pdf().set(opt).from(docElement).save().then(() => {
+    document.body.classList.remove('pdf-export-mode');
     if (prevMode) {
       document.querySelectorAll('.slide-page').forEach((page, idx) => {
         page.style.display = (idx + 1 === currentActivePage) ? 'block' : 'none';
