@@ -103,11 +103,11 @@ function setSingleView(enableSingle) {
   const btn = document.getElementById('btnViewToggle');
   if (enableSingle) {
     document.body.classList.add('single-mode');
-    if (btn) btn.innerText = '📜 استعراض كل الصفحات معاً';
+    if (btn) btn.innerHTML = '<span class="btn-icon">📑</span><span class="btn-label">عرض الكل</span>';
     showSlide(currentActivePage);
   } else {
     document.body.classList.remove('single-mode');
-    if (btn) btn.innerText = '📄 العودة لنمط الشريحة الواحدة';
+    if (btn) btn.innerHTML = '<span class="btn-icon">📄</span><span class="btn-label">شريحة واحدة</span>';
   }
 }
 

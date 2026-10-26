@@ -14,29 +14,30 @@
 </head>
 
 <body>
-  <!-- شريط التحكم العلوي (يختفي تماماً عند الطباعة) -->
+  <!-- شريط التحكم العلوي المدمج الأنيق -->
   <header class="screen-toolbar no-print">
     <div class="toolbar-brand">
       <span class="bulb-icon">💡</span>
-      <div>
-        <h1>ملف التوجيه المهني التفاعلي</h1>
-        <span class="sub-badge">تعبئة إلكترونية مطابقة للأصل 100% مع ميزة الطباعة والحفظ PDF</span>
-      </div>
+      <h1>ملف التوجيه المهني</h1>
     </div>
 
-    <!-- أزرار الإجراءات الرئيسية -->
+    <!-- أزرار الإجراءات السريعة برموز واضحة -->
     <div class="toolbar-actions">
-      <button class="action-btn btn-print" onclick="printDocument()" title="طباعة أو تصدير كـ PDF">
-        🖨️ طباعة الملف بالكامل (PDF)
-      </button>
       <button class="action-btn btn-submit" onclick="submitPortfolio()" title="إرسال وحفظ في Google Drive">
-        🚀 إرسال وحفظ في Google Drive
+        <span class="btn-icon">🚀</span>
+        <span class="btn-label">إرسال</span>
       </button>
-      <button class="action-btn btn-toggle" id="btnViewToggle" onclick="toggleViewMode()">
-        📜 استعراض كل الصفحات معاً
+      <button class="action-btn btn-print" onclick="printDocument()" title="طباعة الملف بالكامل (PDF)">
+        <span class="btn-icon">🖨️</span>
+        <span class="btn-label">طباعة</span>
       </button>
-      <button class="action-btn btn-admin" onclick="toggleAdminPanel()">
-        📊 لوحة المعلمة (<span id="submissionsCountBadge">3</span>)
+      <button class="action-btn btn-toggle" id="btnViewToggle" onclick="toggleViewMode()" title="تبديل طريقة العرض (كل الصفحات / شريحة واحدة)">
+        <span class="btn-icon">📑</span>
+        <span class="btn-label">عرض الكل</span>
+      </button>
+      <button class="action-btn btn-admin" onclick="toggleAdminPanel()" title="لوحة تحكم المعلمة">
+        <span class="btn-icon">📊</span>
+        <span class="btn-badge" id="submissionsCountBadge">3</span>
       </button>
     </div>
   </header>
