@@ -269,6 +269,60 @@ const GOOGLE_SCRIPT_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbySb2x
 let lastGeneratedPdfBlob = null;
 let lastGeneratedPdfName = "ملف_التوجيه_المهني.pdf";
 
+// دالة مساعدة لتجهيز الحقول للـ PDF بحيث تظهر النصوص العربية من اليمين تماماً وبمحاذاة السطور المنقطة
+function prepareDomForPdf(container) {
+  const elements = container.querySelectorAll('input, textarea');
+  const replacements = [];
+
+  elements.forEach(el => {
+    if (el.type === 'file') return;
+
+    const div = document.createElement('div');
+    div.className = el.className + ' pdf-cloned-content';
+
+    const val = (el.value !== undefined && el.value !== '') ? el.value : (el.placeholder || '');
+    div.innerText = val;
+
+    const cs = window.getComputedStyle(el);
+    div.style.width = '100%';
+    div.style.height = '100%';
+    div.style.fontFamily = cs.fontFamily;
+    div.style.fontSize = cs.fontSize;
+    div.style.fontWeight = cs.fontWeight;
+    div.style.lineHeight = cs.lineHeight;
+    div.style.color = cs.color;
+    div.style.background = 'transparent';
+    div.style.border = 'none';
+    div.style.outline = 'none';
+    div.style.boxSizing = 'border-box';
+    div.style.whiteSpace = 'pre-wrap';
+    div.style.overflow = 'hidden';
+    div.style.direction = 'rtl';
+
+    if (el.classList.contains('seamless-textarea') || el.classList.contains('career-desc-field')) {
+      div.style.textAlign = 'right';
+      div.style.padding = cs.padding;
+      div.style.display = 'block';
+    } else {
+      div.style.textAlign = cs.textAlign || 'center';
+      div.style.display = 'flex';
+      div.style.alignItems = 'center';
+      div.style.justifyContent = cs.textAlign === 'right' ? 'flex-end' : 'center';
+    }
+
+    el.parentNode.insertBefore(div, el);
+    el.style.display = 'none';
+    replacements.push({ el, div });
+  });
+
+  return () => {
+    replacements.forEach(({ el, div }) => {
+      div.remove();
+      el.style.display = '';
+    });
+  };
+}
+
 // إرسال البيانات للمعلمة وتوليد PDF ورفعه إلى Google Drive
 async function submitPortfolio() {
   const nameInput = document.getElementById('studentNameInput');
@@ -304,6 +358,7 @@ async function submitPortfolio() {
   });
 
   const docElement = document.getElementById('documentContainer');
+  const cleanupDom = prepareDomForPdf(docElement);
 
   const opt = {
     margin: 0,
@@ -325,7 +380,8 @@ async function submitPortfolio() {
     const pdfDataUri = await html2pdf().set(opt).from(docElement).outputPdf('datauristring');
     const base64Data = pdfDataUri.split(',')[1];
 
-    // استعادة وضع العرض الأصلي وإزالة وضع التصدير
+    // استعادة وضع العرض الأصلي وإزالة وضع التصدير واسترجاع الحقول
+    cleanupDom();
     document.body.classList.remove('pdf-export-mode');
     if (prevMode) {
       document.querySelectorAll('.slide-page').forEach((page, idx) => {
@@ -365,7 +421,8 @@ async function submitPortfolio() {
   } catch (err) {
     console.error('Error uploading PDF:', err);
 
-    // استعادة وضع العرض الأصلي وإزالة وضع التصدير
+    // استعادة وضع العرض الأصلي وإزالة وضع التصدير واسترجاع الحقول
+    cleanupDom();
     document.body.classList.remove('pdf-export-mode');
     if (prevMode) {
       document.querySelectorAll('.slide-page').forEach((page, idx) => {
@@ -386,6 +443,8 @@ function downloadPdfDirectly() {
   });
 
   const docElement = document.getElementById('documentContainer');
+  const cleanupDom = prepareDomForPdf(docElement);
+
   const opt = {
     margin: 0,
     filename: lastGeneratedPdfName,
@@ -396,6 +455,7 @@ function downloadPdfDirectly() {
   };
 
   html2pdf().set(opt).from(docElement).save().then(() => {
+    cleanupDom();
     document.body.classList.remove('pdf-export-mode');
     if (prevMode) {
       document.querySelectorAll('.slide-page').forEach((page, idx) => {
@@ -403,6 +463,9 @@ function downloadPdfDirectly() {
       });
     }
     closeUploadModal();
+  }).catch(() => {
+    cleanupDom();
+    document.body.classList.remove('pdf-export-mode');
   });
 }
 
