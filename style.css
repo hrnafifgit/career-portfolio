@@ -1,0 +1,873 @@
+:root {
+  --primary-teal: #0d9488;
+  --primary-teal-dark: #0f766e;
+  --accent-yellow: #f59e0b;
+  --accent-red: #ef4444;
+  --text-dark: #0f172a;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Tajawal', sans-serif;
+}
+
+body {
+  background: #cbd5e1;
+  color: var(--text-dark);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ========================================================
+   1. شريط التحكم العلوي وشريط ترقيم الصفحات
+   ======================================================== */
+.screen-toolbar {
+  background: #0f172a;
+  color: #fff;
+  padding: 12px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 500;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+
+.toolbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.bulb-icon {
+  font-size: 1.8rem;
+}
+
+.toolbar-brand h1 {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #5eead4;
+}
+
+.sub-badge {
+  font-size: 0.78rem;
+  color: #94a3b8;
+}
+
+.toolbar-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.action-btn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-print {
+  background: #22c55e;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(34, 197, 94, 0.4);
+}
+.btn-print:hover {
+  background: #16a34a;
+  transform: translateY(-1px);
+}
+
+.btn-submit {
+  background: #0d9488;
+  color: #fff;
+}
+.btn-submit:hover {
+  background: #0f766e;
+}
+
+.btn-toggle {
+  background: #334155;
+  color: #e2e8f0;
+}
+.btn-toggle:hover {
+  background: #475569;
+}
+
+.btn-admin {
+  background: #f59e0b;
+  color: #fff;
+}
+
+/* شريط التنقل بين الصفحات */
+.page-stepper {
+  background: #ffffff;
+  padding: 10px 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 14px;
+  border-bottom: 2px solid #e2e8f0;
+  position: sticky;
+  top: 61px;
+  z-index: 400;
+}
+
+.stepper-arrow {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.stepper-arrow:hover {
+  background: #e2e8f0;
+}
+
+.stepper-dots {
+  display: flex;
+  gap: 6px;
+}
+
+.page-num-dot {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  font-size: 0.85rem;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+
+.page-num-dot.active {
+  background: var(--primary-teal);
+  color: #fff;
+  border-color: var(--primary-teal);
+  transform: scale(1.1);
+}
+
+.page-indicator-text {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #64748b;
+  margin-right: 12px;
+}
+
+/* ========================================================
+   2. حاوية الصفحات والشرائح (مطابقة للأصل 100%)
+   ======================================================== */
+.document-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 30px 16px;
+  gap: 30px;
+  flex: 1;
+}
+
+/* كل صفحة تمثل شريحة بنسبة 16:9 أصلية تماماً */
+.slide-page {
+  position: relative;
+  width: 100%;
+  max-width: 1100px;
+  aspect-ratio: 1280 / 720;
+  background: #ffffff;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  overflow: hidden;
+  user-select: none;
+}
+
+/* في نمط الشريحة الواحدة: تظهر الصفحة الحالية فقط */
+body.single-mode .slide-page {
+  display: none;
+}
+body.single-mode .slide-page.current-active {
+  display: block;
+}
+
+/* صورة الشريحة الخلفية الأصلية */
+.slide-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  pointer-events: none;
+}
+
+/* طبقة العناصر التفاعلية فوق الصورة مباشرة */
+.interactive-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10;
+}
+
+/* ========================================================
+   3. تحديد المواقع الدقيقة للحقول لكل صفحة
+   ======================================================== */
+.exact-box {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* مدخلات النصوص المدمجة بانسيابية */
+.seamless-input {
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  text-align: center;
+  font-family: 'Tajawal', sans-serif;
+  font-weight: 800;
+  color: #0f172a;
+}
+.seamless-input:focus {
+  background: rgba(255, 255, 255, 0.5);
+  box-shadow: inset 0 0 0 2px rgba(13, 148, 136, 0.4);
+  border-radius: 8px;
+}
+
+/* --- الصفحة 1: الغلاف --- */
+.cover-action-box {
+  position: absolute;
+  bottom: 22%;
+  left: 20%;
+  z-index: 20;
+}
+.start-journey-btn {
+  background: linear-gradient(135deg, #0d9488 0%, #16a34a 100%);
+  color: #fff;
+  border: none;
+  padding: 14px 28px;
+  font-size: 1.25rem;
+  font-weight: 900;
+  border-radius: 40px;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(13, 148, 136, 0.4);
+  transition: transform 0.2s;
+}
+.start-journey-btn:hover {
+  transform: scale(1.05);
+}
+
+/* --- الصفحة 2: هذا أنا واسمي --- */
+.box-p2-photo {
+  top: 10.5%;
+  left: 59.5%;
+  width: 35.5%;
+  height: 44.5%;
+  border-radius: 20px;
+  overflow: hidden;
+  background: transparent;
+}
+.box-p2-name {
+  top: 68.5%;
+  left: 34.6%;
+  width: 42%;
+  height: 16%;
+}
+.name-input {
+  font-size: 1.6rem;
+  color: #0f172a;
+  padding: 0 16px;
+}
+
+/* أدوات رفع ورسم الصورة داخل الصندوق */
+.hidden-file-input {
+  display: none;
+}
+.photo-placeholder-ui {
+  display: flex;
+  gap: 8px;
+  z-index: 5;
+}
+.mini-tool-btn {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #0d9488;
+  color: #0f766e;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-weight: 800;
+  font-size: 0.85rem;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  transition: all 0.15s;
+}
+.mini-tool-btn:hover {
+  background: #0d9488;
+  color: #fff;
+}
+.filled-photo-preview {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #fff;
+  border-radius: 16px;
+}
+
+/* --- الصفحة 3: أدرس بالصف --- */
+.box-p3-class-text {
+  top: 35.6%;
+  left: 35.8%;
+  width: 35.1%;
+  height: 21.8%;
+}
+.grade-input {
+  font-size: 1.5rem;
+  color: #0f172a;
+}
+/* النقاط التفاعلية فوق أرقام الصفوف 1-6 */
+.grade-hotspot {
+  position: absolute;
+  top: 68.5%;
+  height: 9%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.spot-grade-1 { left: 67.0%; width: 5.5%; }
+.spot-grade-2 { left: 60.8%; width: 5.5%; }
+.spot-grade-3 { left: 54.4%; width: 5.5%; }
+.spot-grade-4 { left: 48.0%; width: 5.5%; }
+.spot-grade-5 { left: 41.7%; width: 5.5%; }
+.spot-grade-6 { left: 35.5%; width: 5.5%; }
+
+/* الدائرة الحمراء التي تحيط بالرقم المختار */
+.selection-marker {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 4px solid transparent;
+  transition: all 0.2s;
+}
+.selection-marker.active {
+  border-color: #e11d48; /* لون أحمر بارز كالقلم */
+  box-shadow: 0 0 8px rgba(225, 29, 72, 0.4);
+}
+
+/* --- الصفحة 4: تاريخ الميلاد --- */
+.box-p4-hijri {
+  top: 50.2%;
+  left: 57.3%;
+  width: 19.0%;
+  height: 10.5%;
+  background: #ffffff;
+  border-radius: 10px;
+}
+.box-p4-gregorian {
+  top: 50.2%;
+  left: 32.3%;
+  width: 19.0%;
+  height: 10.5%;
+  background: #ffffff;
+  border-radius: 10px;
+}
+.date-fields-split {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: 100%;
+  direction: ltr; /* لترتيب اليوم / الشهر / السنة بشكل صحيح */
+}
+.unit-symbol {
+  font-size: 1.35rem;
+  font-weight: 900;
+  color: #0f172a;
+  margin-right: 4px;
+}
+.seamless-date-part {
+  border: none;
+  background: transparent;
+  width: 38px;
+  text-align: center;
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #0f172a;
+  outline: none;
+}
+.seamless-date-part.year {
+  width: 62px;
+}
+.slash {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #64748b;
+  margin: 0 1px;
+}
+
+/* --- الصفحة 5: الجنسية والأعلام --- */
+.box-p5-nationality {
+  top: 9.4%;
+  left: 28.5%;
+  width: 40.6%;
+  height: 16.5%;
+}
+.nationality-input {
+  font-size: 1.6rem;
+  color: #0f172a;
+}
+.flag-hotspot {
+  position: absolute;
+  cursor: pointer;
+  border-radius: 8px;
+  border: 3px solid transparent;
+  box-sizing: border-box;
+  transition: all 0.15s ease;
+}
+.flag-hotspot:hover {
+  border-color: rgba(13, 148, 136, 0.6);
+  background: rgba(13, 148, 136, 0.08);
+}
+.flag-hotspot.active {
+  border: 3px solid #e11d48 !important;
+  background: rgba(225, 29, 72, 0.12) !important;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(225, 29, 72, 0.45);
+}
+
+/* --- الصفحة 6: أقيم في (المناطق) --- */
+.region-hotspot {
+  position: absolute;
+  top: 34%;
+  height: 38%;
+  cursor: pointer;
+}
+.spot-reg-central  { left: 71.5%; width: 14%; }
+.spot-reg-eastern  { left: 58.5%; width: 13%; }
+.spot-reg-western  { left: 45.5%; width: 13%; }
+.spot-reg-southern { left: 32.0%; width: 13.5%; }
+.spot-reg-northern { left: 18.5%; width: 13.5%; }
+
+.region-circle-marker {
+  width: 100%;
+  height: 100%;
+  border-radius: 16px;
+  border: 4px solid transparent;
+  transition: all 0.2s;
+}
+.region-circle-marker.active {
+  border-color: #e11d48;
+  background: rgba(225, 29, 72, 0.08);
+}
+
+/* --- الصفحة 7: الأسرة والعائلة --- */
+.box-p7-family-total {
+  top: 20.5%;
+  left: 33.6%;
+  width: 13.5%;
+  height: 11.3%;
+}
+.box-p7-brothers {
+  top: 43.0%;
+  left: 56.6%;
+  width: 14.0%;
+  height: 11.2%;
+}
+.box-p7-sisters {
+  top: 43.0%;
+  left: 16.7%;
+  width: 14.6%;
+  height: 11.2%;
+}
+.box-p7-order {
+  top: 64.4%;
+  left: 33.9%;
+  width: 10.0%;
+  height: 11.2%;
+}
+.seamless-number {
+  border: none;
+  background: transparent;
+  width: 100%;
+  height: 100%;
+  font-size: 1.8rem;
+  font-weight: 900;
+  text-align: center;
+  color: #0f172a;
+  outline: none;
+}
+
+/* --- الصفحة 8: هواياتي --- */
+.box-p8-photo {
+  top: 6.2%;
+  left: 30.9%;
+  width: 40.8%;
+  height: 36.5%;
+  border-radius: 20px;
+  overflow: hidden;
+}
+.box-p8-text {
+  top: 53.3%;
+  left: 30.9%;
+  width: 40.8%;
+  height: 28.8%;
+}
+
+/* --- الصفحة 9: مواهبي --- */
+.box-p9-photo {
+  top: 6.6%;
+  left: 31.7%;
+  width: 40.7%;
+  height: 38.0%;
+  border-radius: 20px;
+  overflow: hidden;
+}
+.box-p9-text {
+  top: 55.6%;
+  left: 31.7%;
+  width: 40.7%;
+  height: 30.0%;
+}
+
+.seamless-textarea {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: transparent;
+  resize: none;
+  font-family: 'Tajawal', sans-serif;
+  font-size: 1.15rem;
+  font-weight: 700;
+  line-height: 1.85;
+  color: #0f172a;
+  outline: none;
+  padding: 8px 12px;
+}
+
+/* --- الصفحة 10: مهنتي عندما أكبر --- */
+.box-p10-career {
+  top: 27.4%;
+  left: 14.9%;
+  width: 73.9%;
+  height: 50.7%;
+  padding: 16px;
+}
+.career-box-content {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.career-title-field {
+  width: 100%;
+  border: none;
+  background: transparent;
+  font-size: 1.8rem;
+  font-weight: 900;
+  color: #b45309;
+  text-align: center;
+  outline: none;
+  padding: 4px;
+}
+.career-desc-field {
+  flex: 1;
+  width: 100%;
+  border: none;
+  background: transparent;
+  font-size: 1.2rem;
+  font-weight: 700;
+  line-height: 1.8;
+  color: #0f172a;
+  resize: none;
+  outline: none;
+  text-align: center;
+}
+
+/* ========================================================
+   4. نافذة الرسم للأطفال والنوافذ المنبثقة
+   ======================================================== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+}
+.drawing-modal-card, .admin-modal-card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 24px;
+  width: 100%;
+  max-width: 560px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+}
+.modal-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.modal-head h3 {
+  font-size: 1.3rem;
+  color: #0f766e;
+}
+.close-btn {
+  background: transparent;
+  border: none;
+  font-size: 1.4rem;
+  cursor: pointer;
+}
+.canvas-wrap {
+  border: 2px dashed #0d9488;
+  border-radius: 8px;
+  margin: 12px 0;
+  background: #ffffff;
+  display: flex;
+  justify-content: center;
+}
+canvas {
+  touch-action: none;
+  cursor: crosshair;
+}
+.canvas-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+.tool-btn {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+.btn-primary {
+  background: #0d9488;
+  color: #fff;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.btn-outline {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* جدول لوحة المعلمة */
+.admin-stats-summary {
+  display: flex;
+  gap: 12px;
+  margin: 16px 0;
+}
+.mini-stat {
+  flex: 1;
+  background: #f0fdfa;
+  border: 1px solid #99f6e4;
+  padding: 10px;
+  border-radius: 8px;
+  text-align: center;
+}
+.mini-stat .num {
+  font-size: 1.3rem;
+  font-weight: 900;
+  display: block;
+  color: #0f766e;
+}
+.mini-stat .lbl {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+.admin-table-wrap {
+  max-height: 240px;
+  overflow-y: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+.simple-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: right;
+  font-size: 0.85rem;
+}
+.simple-table th, .simple-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid #f1f5f9;
+}
+.simple-table th {
+  background: #f8fafc;
+  font-weight: 800;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* ========================================================
+   5. نمط الطباعة الصارم (PRINTING STYLESHEET)
+   مطابق تماماً لملف الورد الأصلي بنسبة 100%
+   ======================================================== */
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 0 !important;
+  }
+
+  html, body {
+    background: #ffffff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 297mm !important;
+    height: 100% !important;
+  }
+
+  /* إخفاء أشرطة التحكم والأزرار تماماً */
+  .no-print,
+  .screen-toolbar,
+  .page-stepper,
+  .photo-placeholder-ui,
+  .modal-overlay,
+  .cover-action-box {
+    display: none !important;
+  }
+
+  .document-container {
+    padding: 0 !important;
+    margin: 0 !important;
+    gap: 0 !important;
+    display: block !important;
+  }
+
+  /* كل صفحة من الصفحات العشر تطبع كشريحة كاملة على ورقة A4 عرضية مستقلة */
+  .slide-page {
+    display: block !important;
+    width: 297mm !important;
+    height: 210mm !important;
+    max-width: 297mm !important;
+    max-height: 210mm !important;
+    page-break-after: always !important;
+    break-after: page !important;
+    position: relative !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .slide-bg {
+    width: 100% !important;
+    height: 100% !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* الحقول تظهر كنص مطبوع بدون حواف تركيز أو خلفيات */
+  .seamless-input,
+  .seamless-date-part,
+  .seamless-number,
+  .seamless-textarea,
+  .career-title-field,
+  .career-desc-field {
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    color: #000000 !important;
+  }
+
+  /* إبقاء الدوائر الحمراء والتحديدات مطبوعة بوضوح */
+  .selection-marker.active,
+  .region-circle-marker.active,
+  .flag-hotspot.active {
+    border-color: #dc2626 !important;
+    outline-color: #dc2626 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .box-p4-hijri,
+  .box-p4-gregorian {
+    background: #ffffff !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .filled-photo-preview {
+    display: block !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
+
+/* ========================================================
+   نافذة حالة الرفع إلى Google Drive
+   ======================================================== */
+.upload-modal-card {
+  background: #ffffff;
+  padding: 30px;
+  border-radius: 20px;
+  max-width: 440px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+  animation: popIn 0.3s ease;
+}
+
+.spinner-circle {
+  width: 55px;
+  height: 55px;
+  border: 5px solid #e2e8f0;
+  border-top-color: #0d9488;
+  border-radius: 50%;
+  margin: 0 auto;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes popIn {
+  from { transform: scale(0.85); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}

@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ملفي المهني - المرحلة الابتدائية (النسخة التفاعلية المطابقة للأصل)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@500;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+</head>
+
+<body>
+  <!-- شريط التحكم العلوي (يختفي تماماً عند الطباعة) -->
+  <header class="screen-toolbar no-print">
+    <div class="toolbar-brand">
+      <span class="bulb-icon">💡</span>
+      <div>
+        <h1>ملف التوجيه المهني التفاعلي</h1>
+        <span class="sub-badge">تعبئة إلكترونية مطابقة للأصل 100% مع ميزة الطباعة والحفظ PDF</span>
+      </div>
+    </div>
+
+    <!-- أزرار الإجراءات الرئيسية -->
+    <div class="toolbar-actions">
+      <button class="action-btn btn-print" onclick="printDocument()" title="طباعة أو تصدير كـ PDF">
+        🖨️ طباعة الملف بالكامل (PDF)
+      </button>
+      <button class="action-btn btn-submit" onclick="submitPortfolio()" title="إرسال وحفظ في Google Drive">
+        🚀 إرسال وحفظ في Google Drive
+      </button>
+      <button class="action-btn btn-toggle" id="btnViewToggle" onclick="toggleViewMode()">
+        📜 استعراض كل الصفحات معاً
+      </button>
+      <button class="action-btn btn-admin" onclick="toggleAdminPanel()">
+        📊 لوحة المعلمة (<span id="submissionsCountBadge">3</span>)
+      </button>
+    </div>
+  </header>
+
+  <!-- شريط ترقيم الصفحات السريع للتنقل في شاشة العرض (يختفي عند الطباعة) -->
+  <nav class="page-stepper no-print" id="pageStepper">
+    <button class="stepper-arrow" onclick="changeSlide(-1)" title="الصفحة السابقة">➡️ السابق</button>
+    <div class="stepper-dots" id="stepperDots">
+      <!-- توليد الأرقام 1-10 عبر JS -->
+    </div>
+    <button class="stepper-arrow" onclick="changeSlide(1)" title="الصفحة التالية">التالي ⬅️</button>
+    <span class="page-indicator-text" id="pageIndicatorText">صفحة 1 من 10</span>
+  </nav>
+
+  <!-- الحاوية الرئيسية لصفحات الملف (مطابقة 100% لتصميم الورد الأصلي) -->
+  <main class="document-container" id="documentContainer">
+
+    <!-- ==================== الصفحة 1: الغلاف ==================== -->
+    <section class="slide-page" id="page-1" data-page="1">
+      <img src="assets/page_1.jpg" alt="الغلاف" class="slide-bg">
+      <div class="interactive-overlay">
+        <!-- زر بدء الرحلة يظهر فقط على الشاشة -->
+        <div class="cover-action-box no-print">
+          <button class="start-journey-btn" onclick="changeSlide(1)">
+            <span>ابدئي بتعبئة ملفكِ المهني 🚀</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== الصفحة 2: هذا أنا واسمي ==================== -->
+    <section class="slide-page" id="page-2" data-page="2">
+      <img src="assets/page_2.jpg" alt="هذا أنا" class="slide-bg">
+      <div class="interactive-overlay">
+
+        <!-- مربع "هذا أنا" للصورة أو الرسمة (مطابق لمكان الإطار المنقط) -->
+        <div class="exact-box box-p2-photo" id="p2PhotoContainer">
+          <input type="file" id="p2FileInput" accept="image/*" class="hidden-file-input"
+            onchange="handlePhotoUpload(event, 'p2PreviewImg')">
+
+          <div class="photo-placeholder-ui no-print" id="p2UploadControls">
+            <button type="button" class="mini-tool-btn" onclick="triggerFileInput('p2FileInput')">📷 رفع صورة</button>
+            <button type="button" class="mini-tool-btn" onclick="openDrawingModal('p2')">🎨 رسم نفسي</button>
+          </div>
+
+          <!-- الصورة المعروضة (سواء مرفوعة أو مرسومة) وتظهر بالطباعة -->
+          <img id="p2PreviewImg" class="filled-photo-preview hidden" alt="صورتي">
+        </div>
+
+        <!-- سطر "اسمي" (مطابق للسطر المنقط الأزرق) -->
+        <div class="exact-box box-p2-name">
+          <input type="text" id="studentNameInput" class="seamless-input name-input"
+            placeholder="اكتبي اسمكِ الثلاثي هنا..." oninput="syncStudentData()">
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ==================== الصفحة 3: أدرس بالصف ==================== -->
+    <section class="slide-page" id="page-3" data-page="3">
+      <img src="assets/page_3.jpg" alt="أدرس بالصف" class="slide-bg">
+      <div class="interactive-overlay">
+
+        <!-- مربع كتابة الصف -->
+        <div class="exact-box box-p3-class-text">
+          <input type="text" id="gradeTextInput" class="seamless-input grade-input"
+            placeholder="اكتبي صفكِ الدراسي هنا..." value="الرابع الابتدائي" oninput="syncStudentData()">
+        </div>
+
+        <!-- النقاط التفاعلية فوق أرقام الصفوف 1 إلى 6 لوضع دائرة حمراء حول الصف -->
+        <div class="grade-circles-group">
+          <!-- الصف 1 -->
+          <div class="grade-hotspot spot-grade-1" onclick="selectGradeNumber(1)" title="الصف الأول">
+            <div class="selection-marker" id="marker-grade-1"></div>
+          </div>
+          <!-- الصف 2 -->
+          <div class="grade-hotspot spot-grade-2" onclick="selectGradeNumber(2)" title="الصف الثاني">
+            <div class="selection-marker" id="marker-grade-2"></div>
+          </div>
+          <!-- الصف 3 -->
+          <div class="grade-hotspot spot-grade-3" onclick="selectGradeNumber(3)" title="الصف الثالث">
+            <div class="selection-marker" id="marker-grade-3"></div>
+          </div>
+          <!-- الصف 4 (محدد تلقائياً كنموذج) -->
+          <div class="grade-hotspot spot-grade-4" onclick="selectGradeNumber(4)" title="الصف الرابع">
+            <div class="selection-marker active" id="marker-grade-4"></div>
+          </div>
+          <!-- الصف 5 -->
+          <div class="grade-hotspot spot-grade-5" onclick="selectGradeNumber(5)" title="الصف الخامس">
+            <div class="selection-marker" id="marker-grade-5"></div>
+          </div>
+          <!-- الصف 6 -->
+          <div class="grade-hotspot spot-grade-6" onclick="selectGradeNumber(6)" title="الصف السادس">
+            <div class="selection-marker" id="marker-grade-6"></div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ==================== الصفحة 4: تاريخ ميلادي ==================== -->
+    <section class="slide-page" id="page-4" data-page="4">
+      <img src="assets/page_4.jpg" alt="تاريخ ميلادي" class="slide-bg">
+      <div class="interactive-overlay">
+
+        <!-- مربع التاريخ الهجري (اليمين) -->
+        <div class="exact-box box-p4-hijri">
+          <div class="date-fields-split" dir="ltr">
+            <span class="unit-symbol">هـ</span>
+            <input type="text" id="dobHijriYear" class="seamless-date-part year" placeholder="1436" value="1436" maxlength="4" oninput="syncStudentData()">
+            <span class="slash">/</span>
+            <input type="text" id="dobHijriMonth" class="seamless-date-part" placeholder="05" value="05" maxlength="2" oninput="syncStudentData()">
+            <span class="slash">/</span>
+            <input type="text" id="dobHijriDay" class="seamless-date-part" placeholder="14" value="14" maxlength="2" oninput="syncStudentData()">
+          </div>
+        </div>
+
+        <!-- مربع التاريخ الميلادي (اليسار) -->
+        <div class="exact-box box-p4-gregorian">
+          <div class="date-fields-split" dir="ltr">
+            <span class="unit-symbol">م</span>
+            <input type="text" id="dobGregYear" class="seamless-date-part year" placeholder="2015" value="2015" maxlength="4" oninput="syncStudentData()">
+            <span class="slash">/</span>
+            <input type="text" id="dobGregMonth" class="seamless-date-part" placeholder="03" value="03" maxlength="2" oninput="syncStudentData()">
+            <span class="slash">/</span>
+            <input type="text" id="dobGregDay" class="seamless-date-part" placeholder="05" value="05" maxlength="2" oninput="syncStudentData()">
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ==================== الصفحة 5: الجنسية ==================== -->
+    <section class="slide-page" id="page-5" data-page="5">
+      <img src="assets/page_5.jpg" alt="الجنسية" class="slide-bg">
+      <div class="interactive-overlay">
+
+        <!-- مربع كتابة الجنسية -->
+        <div class="exact-box box-p5-nationality">
+          <input type="text" id="nationalityInput" class="seamless-input nationality-input"
+            placeholder="اكتبي جنسيتكِ هنا..." value="سعودية" oninput="syncStudentData()">
+        </div>
+
+        <!-- شبكة نقاط الأعلام التفاعلية بمواقع دقيقة 100% -->
+        <div class="flags-hotspots-overlay" id="flagsHotspots">
+          <!-- الصف الأول من الأعلام (من اليمين إلى اليسار) -->
+          <div class="flag-hotspot active" style="top:38.0%; left:80.5%; width:7.5%; height:16.5%;"
+            onclick="pickFlag('سعودية', this)" title="السعودية"></div>
+          <div class="flag-hotspot" style="top:38.0%; left:71.4%; width:7.0%; height:16.5%;"
+            onclick="pickFlag('مصرية', this)" title="مصر"></div>
+          <div class="flag-hotspot" style="top:38.0%; left:60.5%; width:9.0%; height:16.5%;"
+            onclick="pickFlag('كويتية', this)" title="الكويت"></div>
+          <div class="flag-hotspot" style="top:38.0%; left:49.0%; width:9.4%; height:16.5%;"
+            onclick="pickFlag('إماراتية', this)" title="الإمارات"></div>
+          <div class="flag-hotspot" style="top:38.0%; left:37.8%; width:9.4%; height:16.5%;"
+            onclick="pickFlag('عمانية', this)" title="عمان"></div>
+          <div class="flag-hotspot" style="top:38.0%; left:26.8%; width:9.4%; height:16.5%;"
+            onclick="pickFlag('أردنية', this)" title="الأردن"></div>
+          <div class="flag-hotspot" style="top:38.0%; left:17.2%; width:7.5%; height:16.5%;"
+            onclick="pickFlag('سورية', this)" title="سوريا"></div>
+          <div class="flag-hotspot" style="top:38.0%; left:7.8%; width:7.5%; height:16.5%;"
+            onclick="pickFlag('يمنية', this)" title="اليمن"></div>
+
+          <!-- الصف الثاني من الأعلام -->
+          <div class="flag-hotspot" style="top:57.0%; left:80.5%; width:7.5%; height:16.5%;"
+            onclick="pickFlag('قطرية', this)" title="قطر"></div>
+          <div class="flag-hotspot" style="top:57.0%; left:72.5%; width:6.5%; height:16.5%;"
+            onclick="pickFlag('بحرينية', this)" title="البحرين"></div>
+          <div class="flag-hotspot" style="top:57.0%; left:60.5%; width:9.4%; height:16.5%;"
+            onclick="pickFlag('ليبية', this)" title="ليبيا"></div>
+          <div class="flag-hotspot" style="top:57.0%; left:49.5%; width:9.4%; height:16.5%;"
+            onclick="pickFlag('تونسية', this)" title="تونس"></div>
+          <div class="flag-hotspot" style="top:57.0%; left:38.5%; width:8.6%; height:16.5%;"
+            onclick="pickFlag('لبنانية', this)" title="لبنان"></div>
+          <div class="flag-hotspot" style="top:57.0%; left:26.8%; width:9.4%; height:16.5%;"
+            onclick="pickFlag('مغربية', this)" title="المغرب"></div>
+          <div class="flag-hotspot" style="top:57.0%; left:17.2%; width:6.5%; height:16.5%;"
+            onclick="pickFlag('جزائرية', this)" title="الجزائر"></div>
+          <div class="flag-hotspot" style="top:57.0%; left:7.8%; width:7.5%; height:16.5%;"
+            onclick="pickFlag('سودانية', this)" title="السودان"></div>
+
+          <!-- الصف الثالث من الأعلام -->
+          <div class="flag-hotspot" style="top:76.0%; left:77.0%; width:8.5%; height:16.5%;"
+            onclick="pickFlag('جيبوتية', this)" title="جيبوتي"></div>
+          <div class="flag-hotspot" style="top:76.0%; left:66.0%; width:9.0%; height:16.5%;"
+            onclick="pickFlag('موريتانية', this)" title="موريتانيا"></div>
+          <div class="flag-hotspot" style="top:76.0%; left:55.4%; width:8.6%; height:16.5%;"
+            onclick="pickFlag('صومالية', this)" title="الصومال"></div>
+          <div class="flag-hotspot" style="top:76.0%; left:44.8%; width:8.6%; height:16.5%;"
+            onclick="pickFlag('جزر القمر', this)" title="جزر القمر"></div>
+          <div class="flag-hotspot" style="top:76.0%; left:33.5%; width:9.4%; height:16.5%;"
+            onclick="pickFlag('أمريكية', this)" title="أمريكا"></div>
+          <div class="flag-hotspot" style="top:76.0%; left:22.4%; width:9.4%; height:16.5%;"
+            onclick="pickFlag('بريطانية', this)" title="بريطانيا"></div>
+          <div class="flag-hotspot" style="top:76.0%; left:12.6%; width:7.5%; height:16.5%;"
+            onclick="pickFlag('فرنسية', this)" title="فرنسا"></div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ==================== الصفحة 6: أقيم في ==================== -->
+    <section class="slide-page" id="page-6" data-page="6">
+      <img src="assets/page_6.jpg" alt="أقيم في" class="slide-bg">
+      <div class="interactive-overlay">
+
+        <!-- 5 مناطق: وضع دائرة حول المنطقة المحددة طبقاً للتعليمات في الملف -->
+        <!-- المنطقة الوسطى (اليمين) -->
+        <div class="region-hotspot spot-reg-central" onclick="selectRegionSpot('المنطقة الوسطى', this)"
+          title="المنطقة الوسطى">
+          <div class="region-circle-marker active" id="marker-reg-central"></div>
+        </div>
+
+        <!-- المنطقة الشرقية -->
+        <div class="region-hotspot spot-reg-eastern" onclick="selectRegionSpot('المنطقة الشرقية', this)"
+          title="المنطقة الشرقية">
+          <div class="region-circle-marker" id="marker-reg-eastern"></div>
+        </div>
+
+        <!-- المنطقة الغربية -->
+        <div class="region-hotspot spot-reg-western" onclick="selectRegionSpot('المنطقة الغربية', this)"
+          title="المنطقة الغربية">
+          <div class="region-circle-marker" id="marker-reg-western"></div>
+        </div>
+
+        <!-- المنطقة الجنوبية -->
+        <div class="region-hotspot spot-reg-southern" onclick="selectRegionSpot('المنطقة الجنوبية', this)"
+          title="المنطقة الجنوبية">
+          <div class="region-circle-marker" id="marker-reg-southern"></div>
+        </div>
+
+        <!-- المنطقة الشمالية (اليسار) -->
+        <div class="region-hotspot spot-reg-northern" onclick="selectRegionSpot('المنطقة الشمالية', this)"
+          title="المنطقة الشمالية">
+          <div class="region-circle-marker" id="marker-reg-northern"></div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ==================== الصفحة 7: عدد أفراد أسرتي ==================== -->
+    <section class="slide-page" id="page-7" data-page="7">
+      <img src="assets/page_7.jpg" alt="أسرتي" class="slide-bg">
+      <div class="interactive-overlay">
+
+        <!-- مربع: عدد أفراد أسرتي (الأعلى) -->
+        <div class="exact-box box-p7-family-total">
+          <input type="number" id="inputFamilyTotal" class="seamless-number" value="5" min="1" max="30">
+        </div>
+
+        <!-- مربع: عدد إخواني (الوسط يمين) -->
+        <div class="exact-box box-p7-brothers">
+          <input type="number" id="inputBrothers" class="seamless-number" value="2" min="0" max="20">
+        </div>
+
+        <!-- مربع: عدد أخواتي (الوسط يسار) -->
+        <div class="exact-box box-p7-sisters">
+          <input type="number" id="inputSisters" class="seamless-number" value="1" min="0" max="20">
+        </div>
+
+        <!-- مربع: ترتيبي في العائلة (الأسفل) -->
+        <div class="exact-box box-p7-order">
+          <input type="number" id="inputBirthOrder" class="seamless-number" value="2" min="1" max="20">
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ==================== الصفحة 8: هواياتي ==================== -->
+    <section class="slide-page" id="page-8" data-page="8">
+      <img src="assets/page_8.jpg" alt="هواياتي" class="slide-bg">
+      <div class="interactive-overlay">
+
+        <!-- المربع العلوي: صورة الهواية أو رسمها -->
+        <div class="exact-box box-p8-photo" id="p8PhotoContainer">
+          <input type="file" id="p8FileInput" accept="image/*" class="hidden-file-input"
+            onchange="handlePhotoUpload(event, 'p8PreviewImg')">
+          <div class="photo-placeholder-ui no-print">
+            <button type="button" class="mini-tool-btn" onclick="triggerFileInput('p8FileInput')">📷 صورة
+              للهواية</button>
+            <button type="button" class="mini-tool-btn" onclick="openDrawingModal('p8')">🎨 رسم الهواية</button>
+          </div>
+          <img id="p8PreviewImg" class="filled-photo-preview hidden" alt="هوايتي">
+        </div>
+
+        <!-- المربع السفلي: كتابة الهوايات على السطور المنقطة -->
+        <div class="exact-box box-p8-text">
+          <textarea id="hobbiesInput" class="seamless-textarea"
+            placeholder="أحب قراءة القصص المفيدة، والرسم وتلوين المشاهد الطبيعية، وممارسة رياضة الجري..."></textarea>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ==================== الصفحة 9: مواهبي ==================== -->
+    <section class="slide-page" id="page-9" data-page="9">
+      <img src="assets/page_9.jpg" alt="مواهبي" class="slide-bg">
+      <div class="interactive-overlay">
+
+        <!-- المربع العلوي: صورة الموهبة أو رسمها -->
+        <div class="exact-box box-p9-photo" id="p9PhotoContainer">
+          <input type="file" id="p9FileInput" accept="image/*" class="hidden-file-input"
+            onchange="handlePhotoUpload(event, 'p9PreviewImg')">
+          <div class="photo-placeholder-ui no-print">
+            <button type="button" class="mini-tool-btn" onclick="triggerFileInput('p9FileInput')">🏅 شهادة أو
+              صورة</button>
+            <button type="button" class="mini-tool-btn" onclick="openDrawingModal('p9')">🎨 رسم الموهبة</button>
+          </div>
+          <img id="p9PreviewImg" class="filled-photo-preview hidden" alt="موهبتي">
+        </div>
+
+        <!-- المربع السفلي: كتابة المواهب -->
+        <div class="exact-box box-p9-text">
+          <textarea id="talentsInput" class="seamless-textarea"
+            placeholder="موهبتي في الإلقاء الشعري، والحساب الذهني السريع، وابتكار مجسمات إبداعية..."></textarea>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ==================== الصفحة 10: مهنتي عندما أكبر ==================== -->
+    <section class="slide-page" id="page-10" data-page="10">
+      <img src="assets/page_10.jpg" alt="مهنتي عندما أكبر" class="slide-bg">
+      <div class="interactive-overlay">
+
+        <!-- الإطار الكبير لكتابة ورسم المهنة المستقبلية -->
+        <div class="exact-box box-p10-career">
+          <div class="career-box-content">
+            <div class="career-title-input-row">
+              <input type="text" id="careerTitleInput" class="career-title-field"
+                placeholder="اكتبي مهنتكِ المستقبلية (مثال: طبيبة جراحة 🩺)" value="طبيبة أطفال متميزة 🩺">
+            </div>
+            <textarea id="careerDescriptionInput" class="career-desc-field"
+              placeholder="لماذا اخترتِ هذه المهنة؟ وما هو هدفكِ في خدمة وطنكِ وأهلكِ؟">أطمح أن أصبح طبيبة لأعالج الأطفال وأرسم الابتسامة على وجوههم، وأساهم في تطور وطني ونهضته الصحية.</textarea>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- نافذة الرسم التفاعلية للأطفال (Canvas Modal) - تظهر فقط عند النقر على ارسم وتختفي عند الطباعة -->
+  <div id="drawingModal" class="modal-overlay hidden no-print">
+    <div class="drawing-modal-card">
+      <div class="modal-head">
+        <h3>🎨 لوحة الرسم والتعبير</h3>
+        <button class="close-btn" onclick="closeDrawingModal()">✕</button>
+      </div>
+      <p class="modal-tip">ارسمي بإصبعكِ أو الماوس بألوانكِ المفضلة:</p>
+
+      <div class="canvas-wrap">
+        <canvas id="mainDrawingCanvas" width="500" height="320"></canvas>
+      </div>
+
+      <div class="canvas-toolbar">
+        <label>اللون: <input type="color" id="canvasColorPicker" value="#0d9488"></label>
+        <label>حجم الفرشاة: <input type="range" id="canvasBrushSize" min="2" max="25" value="5"></label>
+        <button type="button" class="tool-btn" onclick="clearMainCanvas()">🗑️ مسح الكل</button>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn-primary" onclick="saveDrawingToActiveBox()">حفظ الرسمة في الصفحة ✅</button>
+        <button class="btn-outline" onclick="closeDrawingModal()">إلغاء</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- لوحة تحكم المعلمة المنبثقة (تظهر عند النقر على زر المعلمة) -->
+  <div id="adminModal" class="modal-overlay hidden no-print">
+    <div class="admin-modal-card">
+      <div class="modal-head">
+        <h3>📊 لوحة تحكم المعلمة والنتائج</h3>
+        <button class="close-btn" onclick="toggleAdminPanel()">✕</button>
+      </div>
+      <p>تصل إلى هذه اللوحة إجابات جميع الطالبات عند الضغط على «إرسال للمعلمة»:</p>
+
+      <div class="admin-stats-summary">
+        <div class="mini-stat">
+          <span class="num" id="adminTotalCount">3</span>
+          <span class="lbl">إجمالي الإرسالات</span>
+        </div>
+        <div class="mini-stat">
+          <span class="num">الرابع</span>
+          <span class="lbl">الصف الأكثر</span>
+        </div>
+        <div class="mini-stat">
+          <span class="num">طبيبة</span>
+          <span class="lbl">المهنة المفضلة</span>
+        </div>
+      </div>
+
+      <div class="admin-table-wrap">
+        <table class="simple-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>اسم الطالبة</th>
+              <th>الصف</th>
+              <th>المنطقة</th>
+              <th>المهنة المستقبلية</th>
+              <th>تاريخ الإرسال</th>
+            </tr>
+          </thead>
+          <tbody id="adminTableBody">
+            <!-- سيتم ملؤها بالجافاسكريبت -->
+          </tbody>
+        </table>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn-primary" onclick="exportAdminExcel()">📥 تصدير الإجابات لـ Excel</button>
+        <button class="btn-outline" onclick="toggleAdminPanel()">إغلاق</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- نافذة حالة الرفع إلى Google Drive -->
+  <div id="uploadStatusModal" class="modal-overlay hidden no-print">
+    <div class="upload-modal-card">
+      <div id="uploadLoadingState">
+        <div class="spinner-circle"></div>
+        <h3 style="margin-top:15px; color:#0f766e;">جارٍ تجهيز ملف الـ PDF...</h3>
+        <p style="color:#64748b; margin-top:8px;" id="uploadStatusText">يتم الآن تحويل صفحات الدفتر إلى ملف PDF ورفعه إلى Google Drive المعلمة ⏳</p>
+      </div>
+      <div id="uploadSuccessState" class="hidden">
+        <div style="font-size:3.5rem;">🎉</div>
+        <h3 style="color:#16a34a; margin-top:10px;">تم الإرسال والرفع بنجاح!</h3>
+        <p style="color:#334155; margin-top:8px;" id="uploadSuccessMsg">تم حفظ ملفك المهني بصيغة PDF في مجلد Google Drive للمعلمة.</p>
+        <button class="btn-primary" style="margin-top:20px; width:100%;" onclick="closeUploadModal()">تم، شكراً لك</button>
+      </div>
+      <div id="uploadErrorState" class="hidden">
+        <div style="font-size:3.5rem;">⚠️</div>
+        <h3 style="color:#ef4444; margin-top:10px;">تنبيه</h3>
+        <p style="color:#334155; margin-top:8px;" id="uploadErrorMsg"></p>
+        <div style="margin-top:15px; display:flex; gap:10px; justify-content:center;">
+          <button class="btn-primary" id="btnDownloadFallback" onclick="downloadPdfDirectly()">تحميل PDF على الجهاز</button>
+          <button class="btn-outline" onclick="closeUploadModal()">إغلاق</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+
+</html>
