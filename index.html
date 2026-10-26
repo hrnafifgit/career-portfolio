@@ -145,26 +145,14 @@
 
         <!-- مربع التاريخ الهجري (اليمين) -->
         <div class="exact-box box-p4-hijri">
-          <div class="date-fields-split" dir="ltr">
-            <span class="unit-symbol">هـ</span>
-            <input type="text" id="dobHijriYear" class="seamless-date-part year" placeholder="1436" value="1436" maxlength="4" oninput="syncStudentData()">
-            <span class="slash">/</span>
-            <input type="text" id="dobHijriMonth" class="seamless-date-part" placeholder="05" value="05" maxlength="2" oninput="syncStudentData()">
-            <span class="slash">/</span>
-            <input type="text" id="dobHijriDay" class="seamless-date-part" placeholder="14" value="14" maxlength="2" oninput="syncStudentData()">
-          </div>
+          <input type="text" id="dobHijriInput" class="seamless-input date-unified-input"
+            placeholder="14 / 05 / 1436 هـ" value="14 / 05 / 1436 هـ" oninput="syncStudentData()" title="تاريخ الميلاد بالهجري">
         </div>
 
         <!-- مربع التاريخ الميلادي (اليسار) -->
         <div class="exact-box box-p4-gregorian">
-          <div class="date-fields-split" dir="ltr">
-            <span class="unit-symbol">م</span>
-            <input type="text" id="dobGregYear" class="seamless-date-part year" placeholder="2015" value="2015" maxlength="4" oninput="syncStudentData()">
-            <span class="slash">/</span>
-            <input type="text" id="dobGregMonth" class="seamless-date-part" placeholder="03" value="03" maxlength="2" oninput="syncStudentData()">
-            <span class="slash">/</span>
-            <input type="text" id="dobGregDay" class="seamless-date-part" placeholder="05" value="05" maxlength="2" oninput="syncStudentData()">
-          </div>
+          <input type="text" id="dobGregInput" class="seamless-input date-unified-input"
+            placeholder="05 / 03 / 2015 م" value="05 / 03 / 2015 م" oninput="syncStudentData()" title="تاريخ الميلاد بالميلادي">
         </div>
 
       </div>
