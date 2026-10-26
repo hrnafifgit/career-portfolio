@@ -191,6 +191,7 @@ body {
   border-radius: 8px;
   overflow: hidden;
   user-select: none;
+  container-type: inline-size;
 }
 
 /* في نمط الشريحة الواحدة: تظهر الصفحة الحالية فقط */
@@ -870,4 +871,136 @@ canvas {
 @keyframes popIn {
   from { transform: scale(0.85); opacity: 0; }
   to { transform: scale(1); opacity: 1; }
+}
+
+/* ========================================================
+   5. ملاءمة الخطوط تلقائياً مع حجم الشريحة (Fluid Typography)
+   تتكيف النصوص مع حجم الشاشة سواء كانت شاشة جوال أو كمبيوتر
+   ======================================================== */
+.name-input {
+  font-size: clamp(0.75rem, 2.5cqw, 1.6rem) !important;
+}
+
+.grade-input {
+  font-size: clamp(0.7rem, 2.2cqw, 1.5rem) !important;
+}
+
+.seamless-textarea {
+  font-size: clamp(0.65rem, 1.7cqw, 1.15rem) !important;
+  line-height: clamp(1.3, 2.6cqw, 1.85) !important;
+}
+
+.career-title-field {
+  font-size: clamp(0.85rem, 2.8cqw, 1.8rem) !important;
+}
+
+.career-desc-field {
+  font-size: clamp(0.65rem, 1.8cqw, 1.2rem) !important;
+  line-height: clamp(1.3, 2.6cqw, 1.8) !important;
+}
+
+.start-journey-btn {
+  font-size: clamp(0.75rem, 2cqw, 1.25rem) !important;
+  padding: clamp(6px, 1.4cqw, 14px) clamp(12px, 2.6cqw, 28px) !important;
+}
+
+.mini-tool-btn {
+  font-size: clamp(0.55rem, 1.2cqw, 0.85rem) !important;
+  padding: clamp(2px, 0.5cqw, 6px) clamp(6px, 1.1cqw, 12px) !important;
+}
+
+.seamless-date-part {
+  font-size: clamp(0.65rem, 1.8cqw, 1.2rem) !important;
+}
+
+.region-circle-marker {
+  font-size: clamp(0.5rem, 1.2cqw, 0.85rem) !important;
+}
+
+.flag-hotspot {
+  font-size: clamp(0.6rem, 1.5cqw, 1.1rem) !important;
+}
+
+/* ========================================================
+   6. ملاءمة شاشات الهواتف والأجهزة اللوحية (Mobile / Tablet)
+   ======================================================== */
+@media (max-width: 768px) {
+  .screen-toolbar {
+    flex-direction: column;
+    padding: 10px 12px;
+    gap: 8px;
+    text-align: center;
+  }
+
+  .toolbar-brand {
+    justify-content: center;
+  }
+
+  .toolbar-brand h1 {
+    font-size: 1rem;
+  }
+
+  .sub-badge {
+    display: none; /* إخفاء النص الفرعي لتوفير مساحة على الجوال */
+  }
+
+  .toolbar-actions {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+  }
+
+  .action-btn {
+    padding: 6px 10px;
+    font-size: 0.78rem;
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+
+  .page-stepper {
+    top: auto;
+    padding: 6px 10px;
+    gap: 6px;
+    overflow-x: auto;
+    justify-content: flex-start;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .page-num-dot {
+    width: 28px;
+    height: 28px;
+    font-size: 0.75rem;
+    flex-shrink: 0;
+  }
+
+  .stepper-arrow {
+    padding: 4px 8px;
+    font-size: 0.75rem;
+    flex-shrink: 0;
+  }
+
+  .page-indicator-text {
+    font-size: 0.75rem;
+    white-space: nowrap;
+    margin-right: 4px;
+    flex-shrink: 0;
+  }
+
+  .document-container {
+    padding: 12px 8px;
+    gap: 16px;
+  }
+
+  .drawing-modal-card,
+  .admin-modal-card {
+    padding: 16px;
+    max-height: 92vh;
+    overflow-y: auto;
+  }
+
+  #mainDrawingCanvas {
+    max-width: 100%;
+    height: auto;
+  }
 }
