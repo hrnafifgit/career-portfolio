@@ -3,33 +3,8 @@ const totalPages = 10;
 let isSingleMode = true; // وضع الشريحة الواحدة للتعبئة المريحة
 let activeDrawingTarget = null; // p2, p8, p9
 
-// بيانات إرسال تجريبية أولية للوحة المعلمة
-let submissions = [
-  {
-    id: 1,
-    name: 'سارة خالد الشمري',
-    grade: 'الصف الرابع الابتدائي',
-    region: 'المنطقة الوسطى',
-    career: 'طبيبة أطفال 🩺',
-    date: 'اليوم، 10:15 ص'
-  },
-  {
-    id: 2,
-    name: 'ريم عبدالعزيز الغامدي',
-    grade: 'الصف الخامس الابتدائي',
-    region: 'المنطقة الغربية',
-    career: 'مهندسة برمجيات 💻',
-    date: 'اليوم، 11:30 ص'
-  },
-  {
-    id: 3,
-    name: 'جنى أحمد الدوسري',
-    grade: 'الصف السادس الابتدائي',
-    region: 'المنطقة الشرقية',
-    career: 'رائدة فضاء 🚀',
-    date: 'أمس، 02:40 م'
-  }
-];
+// سجل إرسالات الطالبات للوحة المعلمة (يبدأ فارغاً)
+let submissions = [];
 
 document.addEventListener('DOMContentLoaded', () => {
   initStepper();
@@ -582,11 +557,41 @@ function renderAdminTable() {
   const tbody = document.getElementById('adminTableBody');
   const countBadge = document.getElementById('submissionsCountBadge');
   const adminTotalCount = document.getElementById('adminTotalCount');
+  const adminTopGrade = document.getElementById('adminTopGrade');
+  const adminTopCareer = document.getElementById('adminTopCareer');
 
-  if (countBadge) countBadge.innerText = submissions.length;
-  if (adminTotalCount) adminTotalCount.innerText = submissions.length;
+  const count = submissions.length;
+  if (countBadge) countBadge.innerText = count;
+  if (adminTotalCount) adminTotalCount.innerText = count;
+
+  if (adminTopGrade) {
+    if (count === 0) {
+      adminTopGrade.innerText = '-';
+    } else {
+      const gradeCounts = {};
+      submissions.forEach(s => { gradeCounts[s.grade] = (gradeCounts[s.grade] || 0) + 1; });
+      const topGrade = Object.keys(gradeCounts).reduce((a, b) => gradeCounts[a] > gradeCounts[b] ? a : b, '-');
+      adminTopGrade.innerText = topGrade.replace('الصف ', '');
+    }
+  }
+
+  if (adminTopCareer) {
+    if (count === 0) {
+      adminTopCareer.innerText = '-';
+    } else {
+      const careerCounts = {};
+      submissions.forEach(s => { careerCounts[s.career] = (careerCounts[s.career] || 0) + 1; });
+      const topCareer = Object.keys(careerCounts).reduce((a, b) => careerCounts[a] > careerCounts[b] ? a : b, '-');
+      adminTopCareer.innerText = topCareer;
+    }
+  }
 
   if (!tbody) return;
+  if (count === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:22px; color:#64748b; font-size:0.95rem;">لا توجد إرسالات حتى الآن. ستظهر هنا إجابات الطالبات فور ضغطهن على «إرسال».</td></tr>`;
+    return;
+  }
+
   tbody.innerHTML = submissions.map((s, idx) => `
     <tr>
       <td>${idx + 1}</td>
@@ -803,7 +808,7 @@ function setupInputConstraints() {
 // نظام الحفظ والاسترجاع التلقائي (LocalStorage Auto-Save & Recovery)
 // ========================================================
 let autoSaveTimer = null;
-const DRAFT_STORAGE_KEY = 'career_portfolio_draft_v2';
+const DRAFT_STORAGE_KEY = 'career_portfolio_draft_v3';
 
 function triggerAutoSave() {
   setAutosaveStatus('saving');
@@ -986,18 +991,18 @@ function confirmResetPortfolio() {
   };
 
   resetVal('studentNameInput', '');
-  resetVal('gradeTextInput', 'الرابع الابتدائي');
-  resetVal('dobHijriInput', '14 / 05 / 1436 هـ');
-  resetVal('dobGregInput', '05 / 03 / 2015 م');
-  resetVal('nationalityInput', 'سعودية');
-  resetVal('inputFamilyTotal', '5');
-  resetVal('inputBrothers', '2');
-  resetVal('inputSisters', '1');
-  resetVal('inputBirthOrder', '2');
+  resetVal('gradeTextInput', '');
+  resetVal('dobHijriInput', '');
+  resetVal('dobGregInput', '');
+  resetVal('nationalityInput', '');
+  resetVal('inputFamilyTotal', '');
+  resetVal('inputBrothers', '');
+  resetVal('inputSisters', '');
+  resetVal('inputBirthOrder', '');
   resetVal('hobbiesInput', '');
   resetVal('talentsInput', '');
-  resetVal('careerTitleInput', 'طبيبة أطفال متميزة 🩺');
-  resetVal('careerDescriptionInput', 'أطمح أن أصبح طبيبة لأعالج الأطفال وأرسم الابتسامة على وجوههم، وأساهم في تطور وطني ونهضته الصحية.');
+  resetVal('careerTitleInput', '');
+  resetVal('careerDescriptionInput', '');
 
   // إخفاء الصور والرسومات
   ['p2PreviewImg', 'p8PreviewImg', 'p9PreviewImg'].forEach(id => {
@@ -1008,15 +1013,13 @@ function confirmResetPortfolio() {
     }
   });
 
-  // إعادة التحديدات الافتراضية
-  selectGradeNumber(4);
-  const centralRegion = document.querySelector('.spot-reg-central');
-  if (centralRegion) selectRegionSpot('المنطقة الوسطى', centralRegion);
-  const saudiFlag = document.querySelector('.flag-hotspot[title="السعودية"]');
-  if (saudiFlag) pickFlag('سعودية', saudiFlag);
+  // إزالة جميع علامات التحديد لتبدأ الطالبة من الصفر
+  document.querySelectorAll('.selection-marker').forEach(m => m.classList.remove('active'));
+  document.querySelectorAll('.region-circle-marker').forEach(m => m.classList.remove('active'));
+  document.querySelectorAll('.flag-hotspot').forEach(f => f.classList.remove('active'));
 
   showSlide(1);
-  showToast('تم بدء ملف جديد بنجاح! يمكنكِ الآن تعبئة بياناتكِ 🚀', 'success', 3500);
+  showToast('تم إفراغ الحقول بالكامل وبدء ملف جديد بنجاح! يمكنكِ الآن تعبئة بياناتكِ 🚀', 'success', 3500);
 }
 
 function syncStudentData() {

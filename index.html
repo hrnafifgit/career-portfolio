@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@500;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=4">
+  <link rel="stylesheet" href="style.css?v=5">
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
@@ -45,7 +45,7 @@
       </button>
       <button class="action-btn btn-admin" onclick="toggleAdminPanel()" title="لوحة تحكم المعلمة">
         <span class="btn-icon">📊</span>
-        <span class="btn-badge" id="submissionsCountBadge">3</span>
+        <span class="btn-badge" id="submissionsCountBadge">0</span>
       </button>
     </div>
   </header>
@@ -112,7 +112,7 @@
         <!-- مربع كتابة الصف -->
         <div class="exact-box box-p3-class-text">
           <input type="text" id="gradeTextInput" class="seamless-input grade-input"
-            placeholder="اكتبي صفكِ الدراسي هنا..." value="الرابع الابتدائي" oninput="syncStudentData()">
+            placeholder="اكتبي صفكِ الدراسي هنا..." value="" oninput="syncStudentData()">
         </div>
 
         <!-- النقاط التفاعلية فوق أرقام الصفوف 1 إلى 6 لوضع دائرة حمراء حول الصف -->
@@ -129,9 +129,9 @@
           <div class="grade-hotspot spot-grade-3" onclick="selectGradeNumber(3)" title="الصف الثالث">
             <div class="selection-marker" id="marker-grade-3"></div>
           </div>
-          <!-- الصف 4 (محدد تلقائياً كنموذج) -->
+          <!-- الصف 4 -->
           <div class="grade-hotspot spot-grade-4" onclick="selectGradeNumber(4)" title="الصف الرابع">
-            <div class="selection-marker active" id="marker-grade-4"></div>
+            <div class="selection-marker" id="marker-grade-4"></div>
           </div>
           <!-- الصف 5 -->
           <div class="grade-hotspot spot-grade-5" onclick="selectGradeNumber(5)" title="الصف الخامس">
@@ -154,13 +154,13 @@
         <!-- مربع التاريخ الهجري (اليمين) -->
         <div class="exact-box box-p4-hijri">
           <input type="text" id="dobHijriInput" class="seamless-input date-unified-input"
-            placeholder="14 / 05 / 1436 هـ" value="14 / 05 / 1436 هـ" oninput="syncStudentData()" title="تاريخ الميلاد بالهجري">
+            placeholder="14 / 05 / 1436 هـ" value="" oninput="syncStudentData()" title="تاريخ الميلاد بالهجري">
         </div>
 
         <!-- مربع التاريخ الميلادي (اليسار) -->
         <div class="exact-box box-p4-gregorian">
           <input type="text" id="dobGregInput" class="seamless-input date-unified-input"
-            placeholder="05 / 03 / 2015 م" value="05 / 03 / 2015 م" oninput="syncStudentData()" title="تاريخ الميلاد بالميلادي">
+            placeholder="05 / 03 / 2015 م" value="" oninput="syncStudentData()" title="تاريخ الميلاد بالميلادي">
         </div>
 
       </div>
@@ -174,13 +174,13 @@
         <!-- مربع كتابة الجنسية -->
         <div class="exact-box box-p5-nationality">
           <input type="text" id="nationalityInput" class="seamless-input nationality-input"
-            placeholder="اكتبي جنسيتكِ هنا..." value="سعودية" oninput="syncStudentData()">
+            placeholder="اكتبي جنسيتكِ هنا..." value="" oninput="syncStudentData()">
         </div>
 
         <!-- شبكة نقاط الأعلام التفاعلية بمواقع دقيقة 100% -->
         <div class="flags-hotspots-overlay" id="flagsHotspots">
           <!-- الصف الأول من الأعلام (من اليمين إلى اليسار) -->
-          <div class="flag-hotspot active" style="top:38.0%; left:80.5%; width:7.5%; height:16.5%;"
+          <div class="flag-hotspot" style="top:38.0%; left:80.5%; width:7.5%; height:16.5%;"
             onclick="pickFlag('سعودية', this)" title="السعودية"></div>
           <div class="flag-hotspot" style="top:38.0%; left:71.4%; width:7.0%; height:16.5%;"
             onclick="pickFlag('مصرية', this)" title="مصر"></div>
@@ -244,7 +244,7 @@
         <!-- المنطقة الوسطى (اليمين) -->
         <div class="region-hotspot spot-reg-central" onclick="selectRegionSpot('المنطقة الوسطى', this)"
           title="المنطقة الوسطى">
-          <div class="region-circle-marker active" id="marker-reg-central"></div>
+          <div class="region-circle-marker" id="marker-reg-central"></div>
         </div>
 
         <!-- المنطقة الشرقية -->
@@ -281,22 +281,22 @@
 
         <!-- مربع: عدد أفراد أسرتي (الأعلى) -->
         <div class="exact-box box-p7-family-total">
-          <input type="number" id="inputFamilyTotal" class="seamless-number" value="5" min="2" max="30" inputmode="numeric" pattern="[0-9]*" oninput="syncStudentData()">
+          <input type="number" id="inputFamilyTotal" class="seamless-number" placeholder="مثال: 5" value="" min="2" max="30" inputmode="numeric" pattern="[0-9]*" oninput="syncStudentData()">
         </div>
 
         <!-- مربع: عدد إخواني (الوسط يمين) -->
         <div class="exact-box box-p7-brothers">
-          <input type="number" id="inputBrothers" class="seamless-number" value="2" min="0" max="25" inputmode="numeric" pattern="[0-9]*" oninput="syncStudentData()">
+          <input type="number" id="inputBrothers" class="seamless-number" placeholder="0" value="" min="0" max="25" inputmode="numeric" pattern="[0-9]*" oninput="syncStudentData()">
         </div>
 
         <!-- مربع: عدد أخواتي (الوسط يسار) -->
         <div class="exact-box box-p7-sisters">
-          <input type="number" id="inputSisters" class="seamless-number" value="1" min="0" max="25" inputmode="numeric" pattern="[0-9]*" oninput="syncStudentData()">
+          <input type="number" id="inputSisters" class="seamless-number" placeholder="0" value="" min="0" max="25" inputmode="numeric" pattern="[0-9]*" oninput="syncStudentData()">
         </div>
 
         <!-- مربع: ترتيبي في العائلة (الأسفل) -->
         <div class="exact-box box-p7-order">
-          <input type="number" id="inputBirthOrder" class="seamless-number" value="2" min="1" max="25" inputmode="numeric" pattern="[0-9]*" oninput="syncStudentData()">
+          <input type="number" id="inputBirthOrder" class="seamless-number" placeholder="مثال: 1" value="" min="1" max="25" inputmode="numeric" pattern="[0-9]*" oninput="syncStudentData()">
         </div>
 
       </div>
@@ -364,10 +364,10 @@
           <div class="career-box-content">
             <div class="career-title-input-row">
               <input type="text" id="careerTitleInput" class="career-title-field"
-                placeholder="اكتبي مهنتكِ المستقبلية (مثال: طبيبة جراحة 🩺)" value="طبيبة أطفال متميزة 🩺" maxlength="60" oninput="syncStudentData()">
+                placeholder="اكتبي مهنتكِ المستقبلية (مثال: طبيبة جراحة 🩺)" value="" maxlength="60" oninput="syncStudentData()">
             </div>
             <textarea id="careerDescriptionInput" class="career-desc-field"
-              placeholder="لماذا اخترتِ هذه المهنة؟ وما هو هدفكِ في خدمة وطنكِ وأهلكِ؟" maxlength="500" oninput="syncStudentData()">أطمح أن أصبح طبيبة لأعالج الأطفال وأرسم الابتسامة على وجوههم، وأساهم في تطور وطني ونهضته الصحية.</textarea>
+              placeholder="لماذا اخترتِ هذه المهنة؟ وما هو هدفكِ في خدمة وطنكِ وأهلكِ؟" maxlength="500" oninput="syncStudentData()"></textarea>
           </div>
         </div>
 
@@ -413,15 +413,15 @@
 
       <div class="admin-stats-summary">
         <div class="mini-stat">
-          <span class="num" id="adminTotalCount">3</span>
+          <span class="num" id="adminTotalCount">0</span>
           <span class="lbl">إجمالي الإرسالات</span>
         </div>
         <div class="mini-stat">
-          <span class="num">الرابع</span>
+          <span class="num" id="adminTopGrade">-</span>
           <span class="lbl">الصف الأكثر</span>
         </div>
         <div class="mini-stat">
-          <span class="num">طبيبة</span>
+          <span class="num" id="adminTopCareer">-</span>
           <span class="lbl">المهنة المفضلة</span>
         </div>
       </div>
@@ -477,7 +477,7 @@
     </div>
   </div>
 
-  <script src="app.js?v=4"></script>
+  <script src="app.js?v=5"></script>
 </body>
 
 </html>
