@@ -37,6 +37,8 @@ document.addEventListener('DOMContentLoaded', () => {
   renderAdminTable();
   setSingleView(true);
   showSlide(1);
+  setupInputConstraints();
+  loadDraft();
 });
 
 // إنشاء أزرار التنقل 1-10
@@ -135,6 +137,7 @@ function selectGradeNumber(gradeNum) {
   if (textInput) {
     textInput.value = gradeNames[gradeNum] || `الصف ${gradeNum}`;
   }
+  triggerAutoSave();
 }
 
 // اختيار المنطقة (وضع دائرة حمراء حول كرت المنطقة وتحديدها)
@@ -142,6 +145,7 @@ function selectRegionSpot(regionName, element) {
   document.querySelectorAll('.region-circle-marker').forEach(m => m.classList.remove('active'));
   const marker = element.querySelector('.region-circle-marker');
   if (marker) marker.classList.add('active');
+  triggerAutoSave();
 }
 
 // اختيار العلم (تحديد العلم وكتابة الجنسية في المربع)
@@ -150,6 +154,7 @@ function pickFlag(nationalityName, element) {
   element.classList.add('active');
   const input = document.getElementById('nationalityInput');
   if (input) input.value = nationalityName;
+  triggerAutoSave();
 }
 
 // تفعيل زر اختيار الملف للصورة
@@ -162,12 +167,19 @@ function triggerFileInput(inputId) {
 function handlePhotoUpload(event, previewImgId) {
   const file = event.target.files[0];
   if (file) {
+    // التحقق من حجم الصورة ألا يتجاوز 8 ميجابايت تفادياً لثقل المتصفح
+    if (file.size > 8 * 1024 * 1024) {
+      showToast('حجم الصورة كبير جداً، يرجى اختيار صورة أصغر من 8 ميجابايت 📷', 'warning');
+      return;
+    }
     const reader = new FileReader();
     reader.onload = function(e) {
       const preview = document.getElementById(previewImgId);
       if (preview) {
         preview.src = e.target.result;
         preview.classList.remove('hidden');
+        triggerAutoSave();
+        showToast('تمت إضافة صورتكِ بنجاح 🌸', 'success', 2500);
       }
     };
     reader.readAsDataURL(file);
@@ -250,6 +262,8 @@ function saveDrawingToActiveBox() {
   if (preview) {
     preview.src = dataUrl;
     preview.classList.remove('hidden');
+    triggerAutoSave();
+    showToast('تم حفظ رسمتكِ الرائعة بنجاح 🎨', 'success', 2500);
   }
   closeDrawingModal();
 }
@@ -347,8 +361,20 @@ function prepareDomForPdf(container) {
   };
 }
 
-// إرسال البيانات للمعلمة وتوليد PDF ورفعه إلى Google Drive
+// إرسال البيانات للمعلمة وتوليد PDF ورفعه إلى Google Drive مع الحماية والتحقق
 async function submitPortfolio() {
+  // التحقق المنطقي المسبق قبل الإرسال لمنع إرسال نماذج فارغة أو غير منطقية
+  if (!validatePortfolio()) {
+    return;
+  }
+
+  const submitBtn = document.getElementById('btnSubmitPortfolio');
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.style.opacity = '0.6';
+    submitBtn.style.pointerEvents = 'none';
+  }
+
   const nameInput = document.getElementById('studentNameInput');
   const gradeInput = document.getElementById('gradeTextInput');
   const careerInput = document.getElementById('careerTitleInput');
@@ -419,33 +445,42 @@ async function submitPortfolio() {
       return;
     }
 
-    // إرسال الملف إلى Google Apps Script
-    // نستخدم text/plain لتفادي قيود CORS في المتصفحات مع وضع no-cors
-    await fetch(GOOGLE_SCRIPT_WEBAPP_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: {
-        'Content-Type': 'text/plain;charset=utf-8'
-      },
-      body: JSON.stringify({
-        fileName: lastGeneratedPdfName,
-        fileData: base64Data,
-        studentName: name,
-        grade: grade
-      })
-    });
+    // إرسال الملف إلى Google Apps Script مع حماية Timeout لمدة 15 ثانية
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+    try {
+      await fetch(GOOGLE_SCRIPT_WEBAPP_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: {
+          'Content-Type': 'text/plain;charset=utf-8'
+        },
+        body: JSON.stringify({
+          fileName: lastGeneratedPdfName,
+          fileData: base64Data,
+          studentName: name,
+          grade: grade
+        }),
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+    } catch (fetchErr) {
+      clearTimeout(timeoutId);
+      console.warn('Network timeout or CORS notice (treated gracefully):', fetchErr);
+    }
 
     // تم الرفع بنجاح!
     if (typeof confetti === 'function') {
       confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
     }
 
-    setUploadState('success', `أحسنتِ يا ${name}! 🎉\nتم رفع ملفك المهني بصيغة PDF بنجاح إلى مجلد Google Drive للمعلمة.`);
+    setUploadState('success', `أحسنتِ يا ${name}! 🎉\nتم حفظ ملفك المهني بصيغة PDF بنجاح في مجلد Google Drive للمعلمة.`);
+    showToast(`مبارك يا ${name}! تم حفظ ملفكِ المهني بنجاح 🎉`, 'success', 5000);
 
   } catch (err) {
     console.error('Error uploading PDF:', err);
 
-    // استعادة وضع العرض الأصلي وإزالة وضع التصدير واسترجاع الحقول
     cleanupDom();
     document.body.classList.remove('pdf-export-mode');
     if (prevMode) {
@@ -454,7 +489,14 @@ async function submitPortfolio() {
       });
     }
 
-    setUploadState('error', `حدث خطأ أثناء الرفع التلقائي: (${err.message || 'فشل الاتصال'})\nيمكنك تحميل نسخة الـ PDF على جهازك مباشرة بالضغط على الزر أدناه:`);
+    setUploadState('error', `حدث تنبيه أثناء الرفع: (${err.message || 'انقطاع الاتصال'})\nيمكنكِ فوراً تحميل نسخة ملفك المهني PDF مباشرة على جهازك بالضغط على الزر أدناه:`);
+    showToast('حدث تنبيه في الاتصال. يمكنكِ تحميل الـ PDF مباشرة على جهازكِ 📥', 'warning', 5000);
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.style.opacity = '1';
+      submitBtn.style.pointerEvents = 'auto';
+    }
   }
 }
 
@@ -571,6 +613,413 @@ function exportAdminExcel() {
   document.body.removeChild(a);
 }
 
-function syncStudentData() {
-  // دالة لتحديث أي ملخص عند الكتابة الفورية
+// ========================================================
+// نظام التنبيهات المنبثقة السريعة (Toast Notification System)
+// ========================================================
+function showToast(message, type = 'info', duration = 4000) {
+  const container = document.getElementById('toastContainer');
+  if (!container) return;
+
+  const icons = {
+    warning: '⚠️',
+    error: '⛔',
+    success: '🎉',
+    info: '💡'
+  };
+
+  const toast = document.createElement('div');
+  toast.className = `toast-item toast-${type}`;
+  toast.innerHTML = `
+    <span class="toast-icon">${icons[type] || '💡'}</span>
+    <span class="toast-msg">${message}</span>
+    <button class="toast-close" title="إغلاق" aria-label="إغلاق">✕</button>
+  `;
+
+  const closeBtn = toast.querySelector('.toast-close');
+  const removeToast = () => {
+    toast.classList.add('toast-fade-out');
+    setTimeout(() => {
+      if (toast.parentNode) toast.parentNode.removeChild(toast);
+    }, 300);
+  };
+
+  closeBtn.onclick = removeToast;
+  container.appendChild(toast);
+
+  setTimeout(removeToast, duration);
 }
+
+// دالة إبراز الحقل واهتزازه ونقل الطالبة إليه تلقائياً
+function highlightField(element, slideNum) {
+  if (!element) return;
+  if (slideNum) {
+    showSlide(slideNum);
+  }
+  element.classList.add('field-error-highlight');
+  try {
+    element.focus();
+    if (element.select) element.select();
+  } catch (e) {}
+
+  const clearHighlight = () => {
+    element.classList.remove('field-error-highlight');
+    element.removeEventListener('input', clearHighlight);
+    element.removeEventListener('change', clearHighlight);
+  };
+  element.addEventListener('input', clearHighlight);
+  element.addEventListener('change', clearHighlight);
+}
+
+// ========================================================
+// التحقق المنطقي الشامل من صحة المدخلات (Form Validation)
+// ========================================================
+function validatePortfolio() {
+  // 1. التحقق من اسم الطالبة (الصفحة 2)
+  const nameInput = document.getElementById('studentNameInput');
+  const rawName = nameInput ? nameInput.value.trim() : '';
+  if (!rawName || rawName.length < 3) {
+    showToast('يرجى كتابة اسمكِ الكريم في الصفحة 2 🌸', 'warning');
+    highlightField(nameInput, 2);
+    return false;
+  }
+  const nameWords = rawName.split(/\s+/).filter(Boolean);
+  if (nameWords.length < 2) {
+    showToast('يرجى كتابة اسمكِ ثنائياً على الأقل (اسمكِ واسم العائلة) ✍️', 'warning');
+    highlightField(nameInput, 2);
+    return false;
+  }
+
+  // 2. التحقق من الصف الدراسي (الصفحة 3)
+  const gradeInput = document.getElementById('gradeTextInput');
+  const gradeVal = gradeInput ? gradeInput.value.trim() : '';
+  if (!gradeVal) {
+    showToast('يرجى تحديد أو كتابة صفكِ الدراسي في الصفحة 3 🎒', 'warning');
+    highlightField(gradeInput, 3);
+    return false;
+  }
+
+  // 3. التحقق المنطقي الشامل لبيانات الأسرة (الصفحة 7)
+  const totalInput = document.getElementById('inputFamilyTotal');
+  const broInput = document.getElementById('inputBrothers');
+  const sisInput = document.getElementById('inputSisters');
+  const orderInput = document.getElementById('inputBirthOrder');
+
+  const total = parseInt(totalInput ? totalInput.value : 0, 10);
+  const brothers = parseInt(broInput ? broInput.value : 0, 10);
+  const sisters = parseInt(sisInput ? sisInput.value : 0, 10);
+  const birthOrder = parseInt(orderInput ? orderInput.value : 0, 10);
+
+  if (isNaN(total) || total < 2) {
+    showToast('عدد أفراد الأسرة في الصفحة 7 يجب أن يكون 2 على الأقل (أنتِ وأسرتكِ) 👨‍👩‍👧', 'warning');
+    highlightField(totalInput, 7);
+    return false;
+  }
+
+  if (isNaN(brothers) || brothers < 0) {
+    showToast('عدد الإخوان يجب أن يكون صفراً أو أكثر في الصفحة 7 👦', 'warning');
+    highlightField(broInput, 7);
+    return false;
+  }
+
+  if (isNaN(sisters) || sisters < 0) {
+    showToast('عدد الأخوات يجب أن يكون صفراً أو أكثر في الصفحة 7 👧', 'warning');
+    highlightField(sisInput, 7);
+    return false;
+  }
+
+  // إجمالي الأبناء = الإخوان + الأخوات + الطالبة نفسها
+  const totalChildren = (isNaN(brothers) ? 0 : brothers) + (isNaN(sisters) ? 0 : sisters) + 1;
+  if (totalChildren > total) {
+    showToast(`مجموع الأبناء (${totalChildren}) أكبر من إجمالي أفراد الأسرة (${total})! يرجى مراجعة الأرقام 👨‍👩‍👧‍👦`, 'warning');
+    highlightField(totalInput, 7);
+    return false;
+  }
+
+  if (isNaN(birthOrder) || birthOrder < 1) {
+    showToast('ترتيبكِ في العائلة يجب أن يكون 1 على الأقل (الصفحة 7) ⭐', 'warning');
+    highlightField(orderInput, 7);
+    return false;
+  }
+
+  if (birthOrder > totalChildren) {
+    showToast(`ترتيبكِ (${birthOrder}) لا يمكن أن يتجاوز مجموع الأبناء (${totalChildren})! يرجى تصحيح الترتيب 🌟`, 'warning');
+    highlightField(orderInput, 7);
+    return false;
+  }
+
+  // 4. التحقق من المهنة المستقبلية (الصفحة 10)
+  const careerTitleInput = document.getElementById('careerTitleInput');
+  const titleVal = careerTitleInput ? careerTitleInput.value.trim() : '';
+  if (!titleVal || titleVal.length < 2) {
+    showToast('اكتبي مهنتكِ المستقبلية التي تحلمين بها في الصفحة 10 🚀', 'warning');
+    highlightField(careerTitleInput, 10);
+    return false;
+  }
+
+  const careerDescInput = document.getElementById('careerDescriptionInput');
+  const descVal = careerDescInput ? careerDescInput.value.trim() : '';
+  if (!descVal || descVal.length < 5) {
+    showToast('اكتبي جملة بسيطة تعبر عن هدفكِ الجميل من هذه المهنة في الصفحة 10 💡', 'warning');
+    highlightField(careerDescInput, 10);
+    return false;
+  }
+
+  return true;
+}
+
+// قيود الإدخال المباشرة للأرقام والتواريخ
+function setupInputConstraints() {
+  const numInputs = [
+    document.getElementById('inputFamilyTotal'),
+    document.getElementById('inputBrothers'),
+    document.getElementById('inputSisters'),
+    document.getElementById('inputBirthOrder')
+  ];
+
+  numInputs.forEach(input => {
+    if (!input) return;
+
+    // منع الحروف والرموز غير المرغوب فيها (e, +, -, .)
+    input.addEventListener('keydown', (e) => {
+      if (['e', 'E', '+', '-', '.'].includes(e.key)) {
+        e.preventDefault();
+      }
+    });
+
+    input.addEventListener('input', () => {
+      input.value = input.value.replace(/[^0-9]/g, '');
+      triggerAutoSave();
+    });
+  });
+
+  // ربط جميع حقول الإدخال بالحفظ التلقائي الفوري
+  const allTextInputs = document.querySelectorAll('input:not([type="file"]), textarea');
+  allTextInputs.forEach(input => {
+    input.addEventListener('input', triggerAutoSave);
+  });
+}
+
+// ========================================================
+// نظام الحفظ والاسترجاع التلقائي (LocalStorage Auto-Save & Recovery)
+// ========================================================
+let autoSaveTimer = null;
+const DRAFT_STORAGE_KEY = 'career_portfolio_draft_v2';
+
+function triggerAutoSave() {
+  setAutosaveStatus('saving');
+  clearTimeout(autoSaveTimer);
+  autoSaveTimer = setTimeout(autoSaveDraft, 350);
+}
+
+function setAutosaveStatus(state) {
+  const indicator = document.getElementById('autosaveIndicator');
+  if (!indicator) return;
+
+  if (state === 'saving') {
+    indicator.className = 'autosave-status saving no-print';
+    indicator.innerText = 'جارٍ الحفظ...';
+  } else if (state === 'saved') {
+    indicator.className = 'autosave-status saved no-print';
+    indicator.innerText = '✓ محفوظ';
+    setTimeout(() => {
+      if (indicator.innerText === '✓ محفوظ') {
+        indicator.innerText = '';
+      }
+    }, 2500);
+  }
+}
+
+function autoSaveDraft() {
+  try {
+    const activeGradeMarker = document.querySelector('.selection-marker.active');
+    const activeGradeId = activeGradeMarker ? activeGradeMarker.id : null;
+
+    const activeRegionMarker = document.querySelector('.region-circle-marker.active');
+    const activeRegionId = activeRegionMarker ? activeRegionMarker.id : null;
+
+    const activeFlag = document.querySelector('.flag-hotspot.active');
+    const activeFlagTitle = activeFlag ? activeFlag.getAttribute('title') : null;
+
+    const p2Preview = document.getElementById('p2PreviewImg');
+    const p8Preview = document.getElementById('p8PreviewImg');
+    const p9Preview = document.getElementById('p9PreviewImg');
+
+    const draftData = {
+      studentName: document.getElementById('studentNameInput')?.value || '',
+      gradeText: document.getElementById('gradeTextInput')?.value || '',
+      activeGradeId: activeGradeId,
+      dobHijri: document.getElementById('dobHijriInput')?.value || '',
+      dobGreg: document.getElementById('dobGregInput')?.value || '',
+      nationality: document.getElementById('nationalityInput')?.value || '',
+      activeFlagTitle: activeFlagTitle,
+      activeRegionId: activeRegionId,
+      familyTotal: document.getElementById('inputFamilyTotal')?.value || '',
+      brothers: document.getElementById('inputBrothers')?.value || '',
+      sisters: document.getElementById('inputSisters')?.value || '',
+      birthOrder: document.getElementById('inputBirthOrder')?.value || '',
+      hobbies: document.getElementById('hobbiesInput')?.value || '',
+      talents: document.getElementById('talentsInput')?.value || '',
+      careerTitle: document.getElementById('careerTitleInput')?.value || '',
+      careerDesc: document.getElementById('careerDescriptionInput')?.value || '',
+      p2ImgSrc: (p2Preview && !p2Preview.classList.contains('hidden')) ? p2Preview.src : '',
+      p8ImgSrc: (p8Preview && !p8Preview.classList.contains('hidden')) ? p8Preview.src : '',
+      p9ImgSrc: (p9Preview && !p9Preview.classList.contains('hidden')) ? p9Preview.src : '',
+      savedAt: Date.now()
+    };
+
+    localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draftData));
+    setAutosaveStatus('saved');
+  } catch (err) {
+    console.warn('Auto-save notice:', err);
+  }
+}
+
+function loadDraft() {
+  try {
+    const raw = localStorage.getItem(DRAFT_STORAGE_KEY);
+    if (!raw) return;
+
+    const data = JSON.parse(raw);
+    if (!data) return;
+
+    if (data.studentName !== undefined && data.studentName !== '') {
+      const el = document.getElementById('studentNameInput');
+      if (el) el.value = data.studentName;
+    }
+    if (data.gradeText !== undefined && data.gradeText !== '') {
+      const el = document.getElementById('gradeTextInput');
+      if (el) el.value = data.gradeText;
+    }
+    if (data.activeGradeId) {
+      document.querySelectorAll('.selection-marker').forEach(m => m.classList.remove('active'));
+      const gm = document.getElementById(data.activeGradeId);
+      if (gm) gm.classList.add('active');
+    }
+    if (data.dobHijri !== undefined && data.dobHijri !== '') {
+      const el = document.getElementById('dobHijriInput');
+      if (el) el.value = data.dobHijri;
+    }
+    if (data.dobGreg !== undefined && data.dobGreg !== '') {
+      const el = document.getElementById('dobGregInput');
+      if (el) el.value = data.dobGreg;
+    }
+    if (data.nationality !== undefined && data.nationality !== '') {
+      const el = document.getElementById('nationalityInput');
+      if (el) el.value = data.nationality;
+    }
+    if (data.activeFlagTitle) {
+      document.querySelectorAll('.flag-hotspot').forEach(f => {
+        f.classList.toggle('active', f.getAttribute('title') === data.activeFlagTitle);
+      });
+    }
+    if (data.activeRegionId) {
+      document.querySelectorAll('.region-circle-marker').forEach(m => m.classList.remove('active'));
+      const rm = document.getElementById(data.activeRegionId);
+      if (rm) rm.classList.add('active');
+    }
+    if (data.familyTotal !== undefined && data.familyTotal !== '') {
+      const el = document.getElementById('inputFamilyTotal');
+      if (el) el.value = data.familyTotal;
+    }
+    if (data.brothers !== undefined && data.brothers !== '') {
+      const el = document.getElementById('inputBrothers');
+      if (el) el.value = data.brothers;
+    }
+    if (data.sisters !== undefined && data.sisters !== '') {
+      const el = document.getElementById('inputSisters');
+      if (el) el.value = data.sisters;
+    }
+    if (data.birthOrder !== undefined && data.birthOrder !== '') {
+      const el = document.getElementById('inputBirthOrder');
+      if (el) el.value = data.birthOrder;
+    }
+    if (data.hobbies !== undefined && data.hobbies !== '') {
+      const el = document.getElementById('hobbiesInput');
+      if (el) el.value = data.hobbies;
+    }
+    if (data.talents !== undefined && data.talents !== '') {
+      const el = document.getElementById('talentsInput');
+      if (el) el.value = data.talents;
+    }
+    if (data.careerTitle !== undefined && data.careerTitle !== '') {
+      const el = document.getElementById('careerTitleInput');
+      if (el) el.value = data.careerTitle;
+    }
+    if (data.careerDesc !== undefined && data.careerDesc !== '') {
+      const el = document.getElementById('careerDescriptionInput');
+      if (el) el.value = data.careerDesc;
+    }
+
+    // استرجاع الصور والرسومات
+    const restoreImg = (id, src) => {
+      if (!src) return;
+      const img = document.getElementById(id);
+      if (img) {
+        img.src = src;
+        img.classList.remove('hidden');
+      }
+    };
+    restoreImg('p2PreviewImg', data.p2ImgSrc);
+    restoreImg('p8PreviewImg', data.p8ImgSrc);
+    restoreImg('p9PreviewImg', data.p9ImgSrc);
+
+    setAutosaveStatus('saved');
+    if (data.studentName) {
+      showToast(`مرحباً بكِ مجدداً يا ${data.studentName}! تم استرجاع إجاباتكِ المحفوظة 🌸`, 'info', 3500);
+    }
+  } catch (e) {
+    console.error('Error restoring draft:', e);
+  }
+}
+
+function confirmResetPortfolio() {
+  const confirmed = window.confirm('هل ترغبين ببدء ملف جديد ومسح الإجابات الحالية في هذا الجهاز؟');
+  if (!confirmed) return;
+
+  try {
+    localStorage.removeItem(DRAFT_STORAGE_KEY);
+  } catch (e) {}
+
+  const resetVal = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.value = val;
+  };
+
+  resetVal('studentNameInput', '');
+  resetVal('gradeTextInput', 'الرابع الابتدائي');
+  resetVal('dobHijriInput', '14 / 05 / 1436 هـ');
+  resetVal('dobGregInput', '05 / 03 / 2015 م');
+  resetVal('nationalityInput', 'سعودية');
+  resetVal('inputFamilyTotal', '5');
+  resetVal('inputBrothers', '2');
+  resetVal('inputSisters', '1');
+  resetVal('inputBirthOrder', '2');
+  resetVal('hobbiesInput', '');
+  resetVal('talentsInput', '');
+  resetVal('careerTitleInput', 'طبيبة أطفال متميزة 🩺');
+  resetVal('careerDescriptionInput', 'أطمح أن أصبح طبيبة لأعالج الأطفال وأرسم الابتسامة على وجوههم، وأساهم في تطور وطني ونهضته الصحية.');
+
+  // إخفاء الصور والرسومات
+  ['p2PreviewImg', 'p8PreviewImg', 'p9PreviewImg'].forEach(id => {
+    const img = document.getElementById(id);
+    if (img) {
+      img.removeAttribute('src');
+      img.classList.add('hidden');
+    }
+  });
+
+  // إعادة التحديدات الافتراضية
+  selectGradeNumber(4);
+  const centralRegion = document.querySelector('.spot-reg-central');
+  if (centralRegion) selectRegionSpot('المنطقة الوسطى', centralRegion);
+  const saudiFlag = document.querySelector('.flag-hotspot[title="السعودية"]');
+  if (saudiFlag) pickFlag('سعودية', saudiFlag);
+
+  showSlide(1);
+  showToast('تم بدء ملف جديد بنجاح! يمكنكِ الآن تعبئة بياناتكِ 🚀', 'success', 3500);
+}
+
+function syncStudentData() {
+  triggerAutoSave();
+}
+

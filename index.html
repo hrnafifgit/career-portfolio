@@ -8,22 +8,26 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@500;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=3">
+  <link rel="stylesheet" href="style.css?v=4">
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 
 <body>
+  <!-- حاوية التنبيهات المنبثقة السريعة -->
+  <div id="toastContainer" class="toast-container no-print" aria-live="polite"></div>
+
   <!-- شريط التحكم العلوي المدمج الأنيق -->
   <header class="screen-toolbar no-print">
     <div class="toolbar-brand">
       <span class="bulb-icon">💡</span>
       <h1>ملف التوجيه المهني</h1>
+      <span id="autosaveIndicator" class="autosave-status no-print"></span>
     </div>
 
     <!-- أزرار الإجراءات السريعة برموز واضحة -->
     <div class="toolbar-actions">
-      <button class="action-btn btn-submit" onclick="submitPortfolio()" title="إرسال وحفظ في Google Drive">
+      <button class="action-btn btn-submit" id="btnSubmitPortfolio" onclick="submitPortfolio()" title="إرسال وحفظ في Google Drive">
         <span class="btn-icon">🚀</span>
         <span class="btn-label">إرسال</span>
       </button>
@@ -34,6 +38,10 @@
       <button class="action-btn btn-toggle" id="btnViewToggle" onclick="toggleViewMode()" title="تبديل طريقة العرض (كل الصفحات / شريحة واحدة)">
         <span class="btn-icon">📑</span>
         <span class="btn-label">عرض الكل</span>
+      </button>
+      <button class="action-btn btn-reset" onclick="confirmResetPortfolio()" title="بدء ملف جديد (مسح البيانات)">
+        <span class="btn-icon">🔄</span>
+        <span class="btn-label">جديد</span>
       </button>
       <button class="action-btn btn-admin" onclick="toggleAdminPanel()" title="لوحة تحكم المعلمة">
         <span class="btn-icon">📊</span>
@@ -90,7 +98,7 @@
         <!-- سطر "اسمي" (مطابق للسطر المنقط الأزرق) -->
         <div class="exact-box box-p2-name">
           <input type="text" id="studentNameInput" class="seamless-input name-input"
-            placeholder="اكتبي اسمكِ الثلاثي هنا..." oninput="syncStudentData()">
+            placeholder="اكتبي اسمكِ الثلاثي هنا..." maxlength="60" autocomplete="name" oninput="syncStudentData()">
         </div>
 
       </div>
@@ -273,22 +281,22 @@
 
         <!-- مربع: عدد أفراد أسرتي (الأعلى) -->
         <div class="exact-box box-p7-family-total">
-          <input type="number" id="inputFamilyTotal" class="seamless-number" value="5" min="1" max="30">
+          <input type="number" id="inputFamilyTotal" class="seamless-number" value="5" min="2" max="30" inputmode="numeric" pattern="[0-9]*" oninput="syncStudentData()">
         </div>
 
         <!-- مربع: عدد إخواني (الوسط يمين) -->
         <div class="exact-box box-p7-brothers">
-          <input type="number" id="inputBrothers" class="seamless-number" value="2" min="0" max="20">
+          <input type="number" id="inputBrothers" class="seamless-number" value="2" min="0" max="25" inputmode="numeric" pattern="[0-9]*" oninput="syncStudentData()">
         </div>
 
         <!-- مربع: عدد أخواتي (الوسط يسار) -->
         <div class="exact-box box-p7-sisters">
-          <input type="number" id="inputSisters" class="seamless-number" value="1" min="0" max="20">
+          <input type="number" id="inputSisters" class="seamless-number" value="1" min="0" max="25" inputmode="numeric" pattern="[0-9]*" oninput="syncStudentData()">
         </div>
 
         <!-- مربع: ترتيبي في العائلة (الأسفل) -->
         <div class="exact-box box-p7-order">
-          <input type="number" id="inputBirthOrder" class="seamless-number" value="2" min="1" max="20">
+          <input type="number" id="inputBirthOrder" class="seamless-number" value="2" min="1" max="25" inputmode="numeric" pattern="[0-9]*" oninput="syncStudentData()">
         </div>
 
       </div>
@@ -356,10 +364,10 @@
           <div class="career-box-content">
             <div class="career-title-input-row">
               <input type="text" id="careerTitleInput" class="career-title-field"
-                placeholder="اكتبي مهنتكِ المستقبلية (مثال: طبيبة جراحة 🩺)" value="طبيبة أطفال متميزة 🩺">
+                placeholder="اكتبي مهنتكِ المستقبلية (مثال: طبيبة جراحة 🩺)" value="طبيبة أطفال متميزة 🩺" maxlength="60" oninput="syncStudentData()">
             </div>
             <textarea id="careerDescriptionInput" class="career-desc-field"
-              placeholder="لماذا اخترتِ هذه المهنة؟ وما هو هدفكِ في خدمة وطنكِ وأهلكِ؟">أطمح أن أصبح طبيبة لأعالج الأطفال وأرسم الابتسامة على وجوههم، وأساهم في تطور وطني ونهضته الصحية.</textarea>
+              placeholder="لماذا اخترتِ هذه المهنة؟ وما هو هدفكِ في خدمة وطنكِ وأهلكِ؟" maxlength="500" oninput="syncStudentData()">أطمح أن أصبح طبيبة لأعالج الأطفال وأرسم الابتسامة على وجوههم، وأساهم في تطور وطني ونهضته الصحية.</textarea>
           </div>
         </div>
 
@@ -469,7 +477,7 @@
     </div>
   </div>
 
-  <script src="app.js?v=3"></script>
+  <script src="app.js?v=4"></script>
 </body>
 
 </html>

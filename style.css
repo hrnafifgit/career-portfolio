@@ -1071,3 +1071,145 @@ body.pdf-export-mode .flag-hotspot.active {
     height: auto;
   }
 }
+
+/* ========================================================
+   7. نظام التنبيهات التفاعلية والفالديشن والتغذية الراجعة
+   ======================================================== */
+.toast-container {
+  position: fixed;
+  top: 58px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+  width: 90%;
+  max-width: 480px;
+}
+
+.toast-item {
+  pointer-events: auto;
+  background: #ffffff;
+  color: #0f172a;
+  padding: 12px 18px;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  border-right: 5px solid #0d9488;
+  direction: rtl;
+  animation: toastSlideDown 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transition: all 0.3s ease;
+}
+
+.toast-item.toast-warning {
+  border-right-color: #f59e0b;
+  background: #fffbeb;
+  color: #92400e;
+}
+
+.toast-item.toast-error {
+  border-right-color: #ef4444;
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.toast-item.toast-success {
+  border-right-color: #10b981;
+  background: #f0fdf4;
+  color: #065f46;
+}
+
+.toast-item.toast-info {
+  border-right-color: #0284c7;
+  background: #f0f9ff;
+  color: #075985;
+}
+
+.toast-icon {
+  font-size: 1.35rem;
+  flex-shrink: 0;
+}
+
+.toast-msg {
+  flex: 1;
+  line-height: 1.45;
+}
+
+.toast-close {
+  background: transparent;
+  border: none;
+  font-size: 1.1rem;
+  cursor: pointer;
+  color: inherit;
+  opacity: 0.6;
+  padding: 0 4px;
+}
+.toast-close:hover {
+  opacity: 1;
+}
+
+@keyframes toastSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.toast-item.toast-fade-out {
+  opacity: 0;
+  transform: translateY(-15px) scale(0.95);
+}
+
+/* وميض واهتزاز الحقول عند وجود خطأ منطقي */
+.field-error-highlight {
+  animation: shakeAndGlow 0.5s ease-in-out forwards !important;
+  outline: 3px solid #ef4444 !important;
+  box-shadow: 0 0 16px rgba(239, 68, 68, 0.5) !important;
+  border-radius: 6px !important;
+}
+
+@keyframes shakeAndGlow {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+
+/* مؤشر الحفظ التلقائي الأنيق */
+.autosave-status {
+  font-size: 0.76rem;
+  color: #94a3b8;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.3s ease;
+  user-select: none;
+}
+
+.autosave-status.saved {
+  color: #34d399;
+}
+
+.autosave-status.saving {
+  color: #fbbf24;
+}
+
+/* زر إعادة الضبط وبدء ملف جديد */
+.btn-reset {
+  background: #475569;
+  color: #f1f5f9;
+}
+.btn-reset:hover {
+  background: #334155;
+  color: #fff;
+}
+
