@@ -7,6 +7,11 @@ let activeDrawingTarget = null; // p2, p8, p9
 let submissions = [];
 
 document.addEventListener('DOMContentLoaded', () => {
+  // مسح أي مسودات سابقة قديمة تجريبية من ذاكرة التخزين المحلية لضمان نظافة الحقول تماماً
+  ['career_portfolio_draft_v1', 'career_portfolio_draft_v2', 'career_portfolio_draft_v3', 'career_portfolio_saved_v1'].forEach(k => {
+    try { localStorage.removeItem(k); } catch (e) {}
+  });
+
   initStepper();
   setupDrawingCanvas();
   renderAdminTable();
@@ -808,7 +813,7 @@ function setupInputConstraints() {
 // نظام الحفظ والاسترجاع التلقائي (LocalStorage Auto-Save & Recovery)
 // ========================================================
 let autoSaveTimer = null;
-const DRAFT_STORAGE_KEY = 'career_portfolio_draft_v3';
+const DRAFT_STORAGE_KEY = 'career_portfolio_clean_v4';
 
 function triggerAutoSave() {
   setAutosaveStatus('saving');
@@ -887,7 +892,7 @@ function loadDraft() {
     const data = JSON.parse(raw);
     if (!data) return;
 
-    if (data.studentName !== undefined && data.studentName !== '') {
+    if (data.studentName !== undefined && data.studentName !== '' && !data.studentName.includes('الابتدائي') && !data.studentName.includes('الصف')) {
       const el = document.getElementById('studentNameInput');
       if (el) el.value = data.studentName;
     }
