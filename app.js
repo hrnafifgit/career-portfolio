@@ -1,4 +1,4 @@
-let currentActivePage = 1;
+﻿let currentActivePage = 1;
 const totalPages = 10;
 let isSingleMode = true; // وضع الشريحة الواحدة للتعبئة المريحة
 let activeDrawingTarget = null; // p2, p8, p9
@@ -260,10 +260,16 @@ function printDocument() {
 // ========================================================
 const GOOGLE_SCRIPT_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbySb2xDDqa2JIbX1bviPoQDUwaBranHlO2kEDTeZVIU8IFT3cEP87BcG1Y24wRX9xAe/exec";
 
+// مهلة الرفع: 60 ثانية لاستيعاب الشبكات البطيئة والملفات الكبيرة
+const UPLOAD_TIMEOUT_MS = 60000;
+
+// عدد محاولات إعادة الإرسال التلقائي عند الفشل
+const MAX_RETRY_ATTEMPTS = 2;
+
 let lastGeneratedPdfBlob = null;
 let lastGeneratedPdfName = "ملف_التوجيه_المهني.pdf";
 
-// دالة مساعدة لتجهيز الحقول للـ PDF بحيث تظهر النصوص العربية من اليمين تماماً وبمحاذاة السطور المنقطة
+// دالة مساعدة لتجهيز الحقول للـ PDF بحيث تظهر النصوص العربية بشكل صحيح
 function prepareDomForPdf(container) {
   const elements = container.querySelectorAll('input, textarea');
   const replacements = [];
@@ -309,7 +315,6 @@ function prepareDomForPdf(container) {
     replacements.push({ el, div });
   });
 
-  // تثبيت الدوائر الحمراء والتحديدات المختارة (الصف، المنطقة، العلم) لتظهر بوضوح تام في الـ PDF
   const activeMarkers = container.querySelectorAll('.selection-marker.active, .region-circle-marker.active, .flag-hotspot.active');
   const markerBackups = [];
 
@@ -341,12 +346,62 @@ function prepareDomForPdf(container) {
   };
 }
 
-// إرسال البيانات للمعلمة وتوليد PDF ورفعه إلى Google Drive مع الحماية والتحقق
-async function submitPortfolio() {
-  // التحقق المنطقي المسبق قبل الإرسال لمنع إرسال نماذج فارغة أو غير منطقية
-  if (!validatePortfolio()) {
-    return;
+// دالة استعادة وضع عرض الشرائح بعد تصدير PDF
+function restoreSlideView(wasInSingleMode) {
+  if (wasInSingleMode) {
+    document.querySelectorAll('.slide-page').forEach((page, idx) => {
+      page.style.display = (idx + 1 === currentActivePage) ? 'block' : 'none';
+    });
   }
+}
+
+// ========================================================
+// الإرسال الحقيقي لـ Google Drive مع CORS + إعادة المحاولة
+// يقرأ رد الخادم ويتحقق من وصول الملف فعلياً
+// ========================================================
+async function sendToGoogleDrive(payload, attempt) {
+  if (attempt === undefined) attempt = 1;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(function() { controller.abort(); }, UPLOAD_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(GOOGLE_SCRIPT_WEBAPP_URL, {
+      method: 'POST',
+      mode: 'cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      signal: controller.signal
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      throw new Error('خطأ في الخادم: ' + response.status);
+    }
+
+    const result = await response.json();
+
+    if (result && result.status === 'success') {
+      return { success: true, fileUrl: result.fileUrl || null };
+    } else {
+      throw new Error(result && result.message ? result.message : 'استجابة غير متوقعة من الخادم');
+    }
+
+  } catch (err) {
+    clearTimeout(timeoutId);
+    if (attempt < MAX_RETRY_ATTEMPTS) {
+      await new Promise(function(resolve) { setTimeout(resolve, 2500); });
+      return sendToGoogleDrive(payload, attempt + 1);
+    }
+    throw err;
+  }
+}
+
+// ========================================================
+// إرسال الملف للمعلمة وتوليد PDF ورفعه مع تحقق حقيقي
+// ========================================================
+async function submitPortfolio() {
+  if (!validatePortfolio()) return;
 
   const submitBtn = document.getElementById('btnSubmitPortfolio');
   if (submitBtn) {
@@ -355,122 +410,105 @@ async function submitPortfolio() {
     submitBtn.style.pointerEvents = 'none';
   }
 
-  const nameInput = document.getElementById('studentNameInput');
+  const nameInput  = document.getElementById('studentNameInput');
   const gradeInput = document.getElementById('gradeTextInput');
   const careerInput = document.getElementById('careerTitleInput');
 
-  const name = (nameInput && nameInput.value.trim()) ? nameInput.value.trim() : 'طالبة متميزة';
-  const grade = (gradeInput && gradeInput.value.trim()) ? gradeInput.value.trim() : 'الصف الرابع الابتدائي';
-  const career = (careerInput && careerInput.value.trim()) ? careerInput.value.trim() : 'طبيبة 🩺';
+  const name   = (nameInput  && nameInput.value.trim())   ? nameInput.value.trim()   : 'طالبة متميزة';
+  const grade  = (gradeInput && gradeInput.value.trim())  ? gradeInput.value.trim()  : 'الصف الرابع الابتدائي';
+  const career = (careerInput && careerInput.value.trim()) ? careerInput.value.trim() : 'طبيبة';
 
-  lastGeneratedPdfName = `ملف_التوجيه_المهني_${name}_${grade}.pdf`.replace(/\s+/g, '_');
+  lastGeneratedPdfName = ('ملف_التوجيه_المهني_' + name + '_' + grade + '.pdf').replace(/\s+/g, '_');
 
-  // فتح نافذة حالة الرفع
   openUploadModal();
-  setUploadState('loading', `جارٍ توليد وتجهيز صفحات ملفك المهني بصيغة PDF لـ ${name}...`);
+  setUploadState('loading', 'جارٍ تجهيز ملفك المهني بصيغة PDF يا ' + name + '... ⏳');
 
-  // حفظ في الجدول المحلي للوحة المعلمة
-  submissions.unshift({
-    id: submissions.length + 1,
-    name: name,
-    grade: grade,
-    region: 'المملكة العربية السعودية',
-    career: career,
-    date: 'الآن'
-  });
-  renderAdminTable();
-
-  // تفعيل وضع تصدير الـ PDF لمنع الفواصل وقص الصفحات
   document.body.classList.add('pdf-export-mode');
   const prevMode = isSingleMode;
-  document.querySelectorAll('.slide-page').forEach(page => {
+  document.querySelectorAll('.slide-page').forEach(function(page) {
     page.style.display = 'block';
   });
 
   const docElement = document.getElementById('documentContainer');
   const cleanupDom = prepareDomForPdf(docElement);
 
+  // إعدادات PDF محسّنة: حجم أصغر + سرعة أكبر مع حفاظ كامل على الجودة المرئية
   const opt = {
     margin: 0,
     filename: lastGeneratedPdfName,
-    image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { scale: 1.5, useCORS: true, logging: false, scrollY: 0 },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
+    image: { type: 'jpeg', quality: 0.82 },
+    html2canvas: { scale: 1.2, useCORS: true, logging: false, scrollY: 0, imageTimeout: 15000 },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape', compress: true },
     pagebreak: { mode: ['avoid-all', 'css', 'legacy'], after: '.slide-page' }
   };
 
   try {
     if (typeof html2pdf !== 'function') {
-      throw new Error('مكتبة html2pdf غير متصلة.');
+      throw new Error('مكتبة html2pdf غير محملة. يرجى إعادة تحديث الصفحة والتحقق من الاتصال بالإنترنت.');
     }
 
-    setUploadState('loading', 'جارٍ الرفع المباشر إلى مجلد Google Drive...');
+    setUploadState('loading', 'جارٍ تحويل الصفحات إلى PDF... قد يستغرق بضع ثوانٍ ⚙️');
 
-    // تحويل الملف إلى DataURI / Base64 مع ضمان فصل كل شريحة في صفحة A4 مستقلة
     const pdfDataUri = await html2pdf().set(opt).from(docElement).outputPdf('datauristring');
     const base64Data = pdfDataUri.split(',')[1];
 
-    // استعادة وضع العرض الأصلي وإزالة وضع التصدير واسترجاع الحقول
+    // استعادة واجهة الموقع فور انتهاء التوليد
     cleanupDom();
     document.body.classList.remove('pdf-export-mode');
-    if (prevMode) {
-      document.querySelectorAll('.slide-page').forEach((page, idx) => {
-        page.style.display = (idx + 1 === currentActivePage) ? 'block' : 'none';
-      });
-    }
+    restoreSlideView(prevMode);
 
-    // إذا لم يقم المعلم بوضع الرابط بعد، نوفر خيار التحميل المباشر مع توجيه
     if (!GOOGLE_SCRIPT_WEBAPP_URL || GOOGLE_SCRIPT_WEBAPP_URL.includes('ضع_رابط')) {
-      setUploadState('error', `أحسنتِ يا ${name}! تم تجهيز ملف الـ PDF بنجاح 👏\n(لم يتم وضع رابط Google Apps Script بعد في الكود، يمكنك تحميل الملف مباشرة الآن).`);
+      setUploadState('error', 'تم تجهيز ملف الـ PDF بنجاح يا ' + name + '! 👏\nيمكنكِ تحميل الملف مباشرة على جهازك.');
       return;
     }
 
-    // إرسال الملف إلى Google Apps Script مع حماية Timeout لمدة 15 ثانية
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000);
+    setUploadState('loading', 'ملف PDF جاهز ✅ جارٍ إرساله إلى Google Drive... 📤');
 
-    try {
-      await fetch(GOOGLE_SCRIPT_WEBAPP_URL, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: {
-          'Content-Type': 'text/plain;charset=utf-8'
-        },
-        body: JSON.stringify({
-          fileName: lastGeneratedPdfName,
-          fileData: base64Data,
-          studentName: name,
-          grade: grade
-        }),
-        signal: controller.signal
-      });
-      clearTimeout(timeoutId);
-    } catch (fetchErr) {
-      clearTimeout(timeoutId);
-      console.warn('Network timeout or CORS notice (treated gracefully):', fetchErr);
-    }
+    // الإرسال الحقيقي مع CORS + قراءة رد الخادم للتحقق الفعلي
+    const uploadResult = await sendToGoogleDrive({
+      fileName: lastGeneratedPdfName,
+      fileData: base64Data,
+      studentName: name,
+      grade: grade
+    });
 
-    // تم الرفع بنجاح!
+    // ✅ تأكيد وصول الملف للخادم قبل إظهار شاشة النجاح
     if (typeof confetti === 'function') {
-      confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
+      confetti({ particleCount: 180, spread: 90, origin: { y: 0.6 } });
     }
 
-    setUploadState('success', `أحسنتِ يا ${name}! 🎉\nتم حفظ ملفك المهني بصيغة PDF بنجاح في مجلد Google Drive للمعلمة.`);
-    showToast(`مبارك يا ${name}! تم حفظ ملفكِ المهني بنجاح 🎉`, 'success', 5000);
+    submissions.unshift({
+      id: submissions.length + 1,
+      name: name,
+      grade: grade,
+      region: 'المملكة العربية السعودية',
+      career: career,
+      date: new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })
+    });
+    renderAdminTable();
+
+    setUploadState('success', 'أحسنتِ يا ' + name + '! 🎉\nتم حفظ ملفك المهني في Google Drive للمعلمة بنجاح تام وتم التحقق من وصوله.');
+    showToast('مبارك يا ' + name + '! وصل ملفكِ للمعلمة بنجاح مؤكد ✅', 'success', 6000);
 
   } catch (err) {
-    console.error('Error uploading PDF:', err);
+    console.error('خطأ في رفع الـ PDF:', err);
 
-    cleanupDom();
+    try { cleanupDom(); } catch (e) {}
     document.body.classList.remove('pdf-export-mode');
-    if (prevMode) {
-      document.querySelectorAll('.slide-page').forEach((page, idx) => {
-        page.style.display = (idx + 1 === currentActivePage) ? 'block' : 'none';
-      });
+    restoreSlideView(prevMode);
+
+    var errorMsg = '';
+    if (err.name === 'AbortError') {
+      errorMsg = 'انتهى وقت الانتظار (60 ثانية).\nيرجى التحقق من قوة الإنترنت والمحاولة مجدداً، أو اضغطي على تحميل PDF وأرسليه للمعلمة.';
+    } else if (err.message && err.message.indexOf('Failed to fetch') !== -1) {
+      errorMsg = 'تعذّر الوصول إلى خادم Google Drive.\nتأكدي من فتح الموقع عبر المتصفح (Safari أو Chrome) وليس كملف محفوظ على الجهاز.';
+    } else {
+      errorMsg = 'حدث خطأ: ' + (err.message || 'مجهول') + '\nاضغطي على تحميل PDF وأرسليه للمعلمة مباشرة.';
     }
 
-    setUploadState('error', `حدث تنبيه أثناء الرفع: (${err.message || 'انقطاع الاتصال'})\nيمكنكِ فوراً تحميل نسخة ملفك المهني PDF مباشرة على جهازك بالضغط على الزر أدناه:`);
-    showToast('حدث تنبيه في الاتصال. يمكنكِ تحميل الـ PDF مباشرة على جهازكِ 📥', 'warning', 5000);
+    setUploadState('error', errorMsg);
+    showToast('تعذّر الرفع. يمكنكِ تحميل الـ PDF مباشرة 📥', 'warning', 6000);
+
   } finally {
     if (submitBtn) {
       submitBtn.disabled = false;
@@ -479,7 +517,6 @@ async function submitPortfolio() {
     }
   }
 }
-
 // تحميل PDF مباشرة على الجهاز كخيار احتياطي
 function downloadPdfDirectly() {
   document.body.classList.add('pdf-export-mode');
