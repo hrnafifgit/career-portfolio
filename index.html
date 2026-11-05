@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 
 <head>
@@ -152,15 +152,27 @@
       <div class="interactive-overlay">
 
         <!-- مربع التاريخ الهجري (اليمين) -->
-        <div class="exact-box box-p4-hijri">
-          <input type="text" id="dobHijriInput" class="seamless-input date-unified-input"
-            placeholder="14 / 05 / 1436 هـ" value="" oninput="syncStudentData()" title="تاريخ الميلاد بالهجري">
+        <div class="exact-box box-p4-hijri" id="boxDobHijri">
+          <div class="date-fields-split" dir="rtl">
+            <input type="text" id="dobHijriDay" class="seamless-date-part day" placeholder="يوم" maxlength="2" inputmode="numeric" pattern="[0-9]*" title="اليوم (هجري)">
+            <span class="slash">/</span>
+            <input type="text" id="dobHijriMonth" class="seamless-date-part month" placeholder="شهر" maxlength="2" inputmode="numeric" pattern="[0-9]*" title="الشهر (هجري)">
+            <span class="slash">/</span>
+            <input type="text" id="dobHijriYear" class="seamless-date-part year" placeholder="سنة" maxlength="4" inputmode="numeric" pattern="[0-9]*" title="السنة (هجري)">
+            <span class="unit-symbol">هـ</span>
+          </div>
         </div>
 
         <!-- مربع التاريخ الميلادي (اليسار) -->
-        <div class="exact-box box-p4-gregorian">
-          <input type="text" id="dobGregInput" class="seamless-input date-unified-input"
-            placeholder="05 / 03 / 2015 م" value="" oninput="syncStudentData()" title="تاريخ الميلاد بالميلادي">
+        <div class="exact-box box-p4-gregorian" id="boxDobGreg">
+          <div class="date-fields-split" dir="rtl">
+            <input type="text" id="dobGregDay" class="seamless-date-part day" placeholder="يوم" maxlength="2" inputmode="numeric" pattern="[0-9]*" title="اليوم (ميلادي)">
+            <span class="slash">/</span>
+            <input type="text" id="dobGregMonth" class="seamless-date-part month" placeholder="شهر" maxlength="2" inputmode="numeric" pattern="[0-9]*" title="الشهر (ميلادي)">
+            <span class="slash">/</span>
+            <input type="text" id="dobGregYear" class="seamless-date-part year" placeholder="سنة" maxlength="4" inputmode="numeric" pattern="[0-9]*" title="السنة (ميلادي)">
+            <span class="unit-symbol">م</span>
+          </div>
         </div>
 
       </div>

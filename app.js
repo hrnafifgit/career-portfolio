@@ -274,8 +274,45 @@ function prepareDomForPdf(container) {
   const elements = container.querySelectorAll('input, textarea');
   const replacements = [];
 
+  // دمج خانات التاريخ (يوم / شهر / سنة) لتظهر كسطر متكامل ومنسق تماماً في الـ PDF
+  const dateSplits = container.querySelectorAll('.date-fields-split');
+  dateSplits.forEach(splitBox => {
+    const parent = splitBox.parentElement;
+    const isHijri = parent && parent.classList.contains('box-p4-hijri');
+    const day = parent.querySelector('.day')?.value || '';
+    const month = parent.querySelector('.month')?.value || '';
+    const year = parent.querySelector('.year')?.value || '';
+    const suffix = isHijri ? 'هـ' : 'م';
+
+    const div = document.createElement('div');
+    div.className = 'pdf-cloned-content';
+    div.style.width = '100%';
+    div.style.height = '100%';
+    div.style.fontFamily = "'Tajawal', sans-serif";
+    div.style.fontSize = '1.35rem';
+    div.style.fontWeight = '800';
+    div.style.color = '#0f172a';
+    div.style.background = 'transparent';
+    div.style.border = 'none';
+    div.style.display = 'flex';
+    div.style.alignItems = 'center';
+    div.style.justifyContent = 'center';
+    div.style.direction = 'rtl';
+    div.style.textAlign = 'center';
+
+    if (day || month || year) {
+      div.innerText = `${day || '--'} / ${month || '--'} / ${year || '----'} ${suffix}`;
+    } else {
+      div.innerText = isHijri ? '14 / 05 / 1436 هـ' : '05 / 03 / 2015 م';
+    }
+
+    splitBox.style.display = 'none';
+    parent.appendChild(div);
+    replacements.push({ el: splitBox, div: div, isDateSplit: true });
+  });
+
   elements.forEach(el => {
-    if (el.type === 'file') return;
+    if (el.type === 'file' || el.classList.contains('seamless-date-part')) return;
 
     const div = document.createElement('div');
     div.className = el.className + ' pdf-cloned-content';
@@ -312,7 +349,7 @@ function prepareDomForPdf(container) {
 
     el.parentNode.insertBefore(div, el);
     el.style.display = 'none';
-    replacements.push({ el, div });
+    replacements.push({ el, div, isDateSplit: false });
   });
 
   const activeMarkers = container.querySelectorAll('.selection-marker.active, .region-circle-marker.active, .flag-hotspot.active');
@@ -334,9 +371,9 @@ function prepareDomForPdf(container) {
   });
 
   return () => {
-    replacements.forEach(({ el, div }) => {
+    replacements.forEach(({ el, div, isDateSplit }) => {
       div.remove();
-      el.style.display = '';
+      el.style.display = isDateSplit ? 'flex' : '';
     });
     markerBackups.forEach(({ marker, oldBorder, oldBg, oldBoxSizing }) => {
       marker.style.border = oldBorder;
@@ -345,8 +382,6 @@ function prepareDomForPdf(container) {
     });
   };
 }
-
-// دالة استعادة وضع عرض الشرائح بعد تصدير PDF
 function restoreSlideView(wasInSingleMode) {
   if (wasInSingleMode) {
     document.querySelectorAll('.slide-page').forEach((page, idx) => {
@@ -816,7 +851,65 @@ function validatePortfolio() {
 }
 
 // قيود الإدخال المباشرة للأرقام والتواريخ
+
+// ========================================================
+// دوال إدارة حقول التاريخ مع الفواصل والرموز الثابتة (هـ / م)
+// ========================================================
+function getFormattedDateHijri() {
+  const day = document.getElementById('dobHijriDay')?.value.trim();
+  const month = document.getElementById('dobHijriMonth')?.value.trim();
+  const year = document.getElementById('dobHijriYear')?.value.trim();
+  if (!day && !month && !year) return '';
+  return `${day || '--'} / ${month || '--'} / ${year || '----'} هـ`;
+}
+
+function getFormattedDateGreg() {
+  const day = document.getElementById('dobGregDay')?.value.trim();
+  const month = document.getElementById('dobGregMonth')?.value.trim();
+  const year = document.getElementById('dobGregYear')?.value.trim();
+  if (!day && !month && !year) return '';
+  return `${day || '--'} / ${month || '--'} / ${year || '----'} م`;
+}
+
+function setupDateInputs() {
+  const groups = [
+    { day: 'dobHijriDay', month: 'dobHijriMonth', year: 'dobHijriYear' },
+    { day: 'dobGregDay', month: 'dobGregMonth', year: 'dobGregYear' }
+  ];
+
+  groups.forEach(group => {
+    const dayEl = document.getElementById(group.day);
+    const monthEl = document.getElementById(group.month);
+    const yearEl = document.getElementById(group.year);
+
+    [dayEl, monthEl, yearEl].forEach(el => {
+      if (!el) return;
+
+      el.addEventListener('keydown', (e) => {
+        if (['e', 'E', '+', '-', '.'].includes(e.key)) {
+          e.preventDefault();
+        }
+        if (e.key === 'Backspace' && el.value === '') {
+          if (el === yearEl && monthEl) monthEl.focus();
+          else if (el === monthEl && dayEl) dayEl.focus();
+        }
+      });
+
+      el.addEventListener('input', () => {
+        el.value = el.value.replace(/[^0-9]/g, '');
+        if (el === dayEl && el.value.length >= 2) {
+          if (monthEl) monthEl.focus();
+        } else if (el === monthEl && el.value.length >= 2) {
+          if (yearEl) yearEl.focus();
+        }
+        triggerAutoSave();
+      });
+    });
+  });
+}
+
 function setupInputConstraints() {
+  setupDateInputs();
   const numInputs = [
     document.getElementById('inputFamilyTotal'),
     document.getElementById('inputBrothers'),
@@ -896,9 +989,15 @@ function autoSaveDraft() {
       studentName: document.getElementById('studentNameInput')?.value || '',
       gradeText: document.getElementById('gradeTextInput')?.value || '',
       activeGradeId: activeGradeId,
-      dobHijri: document.getElementById('dobHijriInput')?.value || '',
-      dobGreg: document.getElementById('dobGregInput')?.value || '',
-      nationality: document.getElementById('nationalityInput')?.value || '',
+            dobHijriDay: document.getElementById('dobHijriDay')?.value || '',
+      dobHijriMonth: document.getElementById('dobHijriMonth')?.value || '',
+      dobHijriYear: document.getElementById('dobHijriYear')?.value || '',
+      dobGregDay: document.getElementById('dobGregDay')?.value || '',
+      dobGregMonth: document.getElementById('dobGregMonth')?.value || '',
+      dobGregYear: document.getElementById('dobGregYear')?.value || '',
+      dobHijri: getFormattedDateHijri(),
+      dobGreg: getFormattedDateGreg(),
+            nationality: document.getElementById('nationalityInput')?.value || '',
       activeFlagTitle: activeFlagTitle,
       activeRegionId: activeRegionId,
       familyTotal: document.getElementById('inputFamilyTotal')?.value || '',
@@ -943,13 +1042,23 @@ function loadDraft() {
       const gm = document.getElementById(data.activeGradeId);
       if (gm) gm.classList.add('active');
     }
-    if (data.dobHijri !== undefined && data.dobHijri !== '') {
-      const el = document.getElementById('dobHijriInput');
-      if (el) el.value = data.dobHijri;
+    if (data.dobHijriDay !== undefined) { const el = document.getElementById('dobHijriDay'); if (el) el.value = data.dobHijriDay; }
+    if (data.dobHijriMonth !== undefined) { const el = document.getElementById('dobHijriMonth'); if (el) el.value = data.dobHijriMonth; }
+    if (data.dobHijriYear !== undefined) { const el = document.getElementById('dobHijriYear'); if (el) el.value = data.dobHijriYear; }
+    if (data.dobGregDay !== undefined) { const el = document.getElementById('dobGregDay'); if (el) el.value = data.dobGregDay; }
+    if (data.dobGregMonth !== undefined) { const el = document.getElementById('dobGregMonth'); if (el) el.value = data.dobGregMonth; }
+    if (data.dobGregYear !== undefined) { const el = document.getElementById('dobGregYear'); if (el) el.value = data.dobGregYear; }
+    if (!data.dobHijriDay && !data.dobHijriMonth && !data.dobHijriYear && data.dobHijri) {
+      const parts = data.dobHijri.replace(/[^\d\s\/]/g, '').split('/').map(s => s.trim());
+      if (parts[0]) { const el = document.getElementById('dobHijriDay'); if (el) el.value = parts[0]; }
+      if (parts[1]) { const el = document.getElementById('dobHijriMonth'); if (el) el.value = parts[1]; }
+      if (parts[2]) { const el = document.getElementById('dobHijriYear'); if (el) el.value = parts[2]; }
     }
-    if (data.dobGreg !== undefined && data.dobGreg !== '') {
-      const el = document.getElementById('dobGregInput');
-      if (el) el.value = data.dobGreg;
+    if (!data.dobGregDay && !data.dobGregMonth && !data.dobGregYear && data.dobGreg) {
+      const parts = data.dobGreg.replace(/[^\d\s\/]/g, '').split('/').map(s => s.trim());
+      if (parts[0]) { const el = document.getElementById('dobGregDay'); if (el) el.value = parts[0]; }
+      if (parts[1]) { const el = document.getElementById('dobGregMonth'); if (el) el.value = parts[1]; }
+      if (parts[2]) { const el = document.getElementById('dobGregYear'); if (el) el.value = parts[2]; }
     }
     if (data.nationality !== undefined && data.nationality !== '') {
       const el = document.getElementById('nationalityInput');
@@ -1035,8 +1144,12 @@ function confirmResetPortfolio() {
 
   resetVal('studentNameInput', '');
   resetVal('gradeTextInput', '');
-  resetVal('dobHijriInput', '');
-  resetVal('dobGregInput', '');
+    resetVal('dobHijriDay', '');
+  resetVal('dobHijriMonth', '');
+  resetVal('dobHijriYear', '');
+  resetVal('dobGregDay', '');
+  resetVal('dobGregMonth', '');
+  resetVal('dobGregYear', '');
   resetVal('nationalityInput', '');
   resetVal('inputFamilyTotal', '');
   resetVal('inputBrothers', '');
