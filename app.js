@@ -368,7 +368,8 @@ async function sendToGoogleDrive(payload, attempt) {
     const response = await fetch(GOOGLE_SCRIPT_WEBAPP_URL, {
       method: 'POST',
       mode: 'cors',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      redirect: 'follow',
       body: JSON.stringify(payload),
       signal: controller.signal
     });
@@ -531,9 +532,9 @@ function downloadPdfDirectly() {
   const opt = {
     margin: 0,
     filename: lastGeneratedPdfName,
-    image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { scale: 1.5, useCORS: true, scrollY: 0 },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
+    image: { type: 'jpeg', quality: 0.82 },
+    html2canvas: { scale: 1.2, useCORS: true, scrollY: 0, imageTimeout: 15000 },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape', compress: true },
     pagebreak: { mode: ['avoid-all', 'css', 'legacy'], after: '.slide-page' }
   };
 
